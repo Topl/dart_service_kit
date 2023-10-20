@@ -30,3 +30,7 @@ migrate_working_dir/
 build/
 .flutter-plugins
 .flutter-plugins-dependencies
+
+
+# Generated Dart Files
+*g.dart

@@ -1,8 +1,9 @@
 import 'package:brambl_dart/brambl_dart.dart' as brambl;
 import 'package:isar/isar.dart';
+import 'package:servicekit/api/abstractions/parse_result.dart';
 import 'package:servicekit/models/wallet_contract.dart';
 
-class ContractStorageApi extends brambl.ContractStorageAlgebra {
+class ContractStorageApi implements brambl.ContractStorageAlgebra, ParseResult<brambl.WalletContract, WalletContract> {
   final Isar _instance;
 
   ContractStorageApi(this._instance);
@@ -17,13 +18,18 @@ class ContractStorageApi extends brambl.ContractStorageAlgebra {
   }
 
   @override
-  Future<List<WalletContract>> findContracts(List<brambl.WalletContract> walletContracts) async {
+  Future<List<brambl.WalletContract>> findContracts(List<brambl.WalletContract> walletContracts) async {
     try {
-      final contracts = await _instance.walletContracts.getAll(walletContracts.map((c) => c.yIdx).toList());
-      return contracts.isNotEmpty ? contracts as List<WalletContract> : [];
+      return (await _instance.walletContracts.getAll(walletContracts.map((c) => c.yIdx).toList()))
+          .withResult((res) => parse(res));
     } catch (e) {
       rethrow;
     }
+  }
+
+  @override
+  List<brambl.WalletContract> parse(List<WalletContract?> results) {
+    return results.isNotEmpty ? (results as List<WalletContract>).map((e) => e.asBrambl).toList() : [];
   }
 }
 

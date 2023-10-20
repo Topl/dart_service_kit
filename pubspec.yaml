@@ -2,6 +2,7 @@ name: servicekit
 description: Topl's ready to use toolkit for Flutter on the Topl Blockchain
 version: 2.0.1 # protocol ver 2
 homepage:
+repository: https://github.com/Topl/dart_service_kit
 publish_to: none
 
 environment:
@@ -18,7 +19,8 @@ dependencies:
   brambl_dart:
     git:
       url: https://github.com/Topl/BramblDart.git
-      ref: tetra
+      # ref: tetra
+      ref: data_api_compat
 
   # types
   fixnum: ^1.1.0
@@ -27,6 +29,8 @@ dependencies:
   #storage
   flutter_secure_storage: ^9.0.0
   isar: ^3.1.0+1 # upgrade to v4 when available for encryption support
+  isar_flutter_libs: ^3.1.0+1
+  path_provider: ^2.1.1
 
 
 dev_dependencies:
