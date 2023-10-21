@@ -7,7 +7,9 @@ part 'contract.g.dart';
 
 @Collection()
 class Contract {
-  final Id yContract;
+  final Id id = Isar.autoIncrement;
+  
+  final int yContract;
 
   final String contract;
   final String lock;

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:brambl_dart/brambl_dart.dart';
@@ -154,63 +155,137 @@ class WalletStateApi implements WalletStateAlgebra {
           zState: indices.z,
           lockPredicate: lockPredicate,
           address: lockAddress,
-          routine: routine ?? '',
+          routine: routine,
           vk: vk),
     );
   }
 
   @override
   Indices? getNextIndicesForFunds(String party, String contract) {
-    // TODO: implement getNextIndicesForFunds
-    throw UnimplementedError();
+    final parties = _instance.partys;
+    final contracts = _instance.contracts;
+    final cartesian = _instance.cartesians;
+
+    final partyResult = parties.where().filter().nameEqualTo(party).findFirstSync();
+
+    final contractResult = contracts.where().filter().contractEqualTo(contract).findFirstSync();
+
+    if (partyResult != null && contractResult != null) {
+      final cartesianResult = cartesian
+          .where()
+          .filter()
+          .xPartyEqualTo(partyResult.xParty)
+          .and()
+          .yContractEqualTo(contractResult.yContract)
+          .sortByZStateDesc()
+          .findFirstSync();
+
+      if (cartesianResult != null) {
+        return Indices(
+          x: cartesianResult.xParty,
+          y: cartesianResult.yContract,
+          z: cartesianResult.zState + 1,
+        );
+      }
+    }
+
+    return null;
+  }
+
+  bool validateParty(String party) {
+    final parties = _instance.partys;
+
+    final partyResult = parties.where().filter().nameEqualTo(party).findFirstSync();
+
+    return partyResult == null ? false : true;
+  }
+
+  bool validateContract(String contract) {
+    final contracts = _instance.contracts;
+
+    final contractResult = contracts.where().filter().contractEqualTo(contract).findFirstSync();
+
+    return contractResult == null ? false : true;
   }
 
   @override
-  void addEntityVks(String party, String contract, List<String> entities) {
-    // TODO: implement addEntityVks
-  }
+  Either<String, Indices> validateCurrentIndicesForFunds(String party, String contract, int? someState) {
+    final p = validateParty(party);
+    final c = validateContract(contract);
+    final indices = getCurrentIndicesForFunds(party, contract, someState);
 
-  @override
-  void addNewLockTemplate(String contract, LockTemplate lockTemplate) {
-    // TODO: implement addNewLockTemplate
+    if (indices == null) return Either.left('Indices not found');
+    return Either.right(indices);
   }
 
   @override
   String? getAddress(String party, String contract, int? someState) {
-    // TODO: implement getAddress
-    throw UnimplementedError();
-  }
+    final parties = _instance.partys;
+    final contracts = _instance.contracts;
+    final cartesian = _instance.cartesians;
 
-  @override
-  String getCurrentAddress() {
-    // TODO: implement getCurrentAddress
-    throw UnimplementedError();
+    final partyResult = parties.where().filter().nameEqualTo(party).findFirstSync();
+    final contractResult = contracts.where().filter().contractEqualTo(contract).findFirstSync();
+
+    if (partyResult != null && contractResult != null) {
+      final cartesianResult = cartesian
+          .where()
+          .filter()
+          .xPartyEqualTo(partyResult.xParty)
+          .and()
+          .yContractEqualTo(contractResult.yContract)
+          .and()
+          .zStateEqualTo(someState ?? 0)
+          .findFirstSync();
+
+      if (cartesianResult == null) return null;
+      return cartesianResult.address;
+    }
+    return null;
   }
 
   @override
   Indices? getCurrentIndicesForFunds(String party, String contract, int? someState) {
-    // TODO: implement getCurrentIndicesForFunds
-    throw UnimplementedError();
+    final parties = _instance.partys;
+    final contracts = _instance.contracts;
+    final cartesian = _instance.cartesians;
+
+    final partyResult = parties.where().filter().nameEqualTo(party).findFirstSync();
+    final contractResult = contracts.where().filter().contractEqualTo(contract).findFirstSync();
+
+    if (partyResult != null && contractResult != null) {
+      final cartesianResult = cartesian
+          .where()
+          .filter()
+          .xPartyEqualTo(partyResult.xParty)
+          .and()
+          .yContractEqualTo(contractResult.yContract)
+          .and()
+          .zStateEqualTo(someState ?? 0)
+          .findFirstSync();
+
+      if (cartesianResult == null) return null;
+      return Indices(
+        x: cartesianResult.xParty,
+        y: cartesianResult.yContract,
+        z: cartesianResult.zState,
+      );
+    }
+    return null;
   }
 
   @override
-  List<String>? getEntityVks(String party, String contract) {
-    // TODO: implement getEntityVks
-    throw UnimplementedError();
+  String getCurrentAddress() {
+    final cartesian = _instance.cartesians;
+
+    final cartesianResult =
+        cartesian.where().filter().xPartyEqualTo(1).and().yContractEqualTo(1).sortByZStateDesc().findFirstSync();
+
+    if (cartesianResult != null) return cartesianResult.address;
+    throw Exception('No address found');
   }
 
-  @override
-  Lock? getLock(String party, String contract, int nextState) {
-    // TODO: implement getLock
-    throw UnimplementedError();
-  }
-
-  @override
-  LockTemplate? getLockTemplate(String contract) {
-    // TODO: implement getLockTemplate
-    throw UnimplementedError();
-  }
-
+  // TODO: We are not yet supporting Digest propositions in brambl-cli
   @override
   Preimage? getPreimage(Proposition_Digest digestProposition) {
     // TODO: implement getPreimage
@@ -218,8 +293,91 @@ class WalletStateApi implements WalletStateAlgebra {
   }
 
   @override
-  (String, Indices)? validateCurrentIndicesForFunds(String party, String contract, int? someState) {
-    // TODO: implement validateCurrentIndicesForFunds
-    throw UnimplementedError();
+  Future<void> addEntityVks(String party, String contract, List<String> entities) async {
+    final parties = _instance.partys;
+    final contracts = _instance.contracts;
+    final verificationKeys = _instance.verificationKeys;
+
+    final partyResult = parties.where().filter().nameEqualTo(party).findFirstSync();
+    final contractResult = contracts.where().filter().contractEqualTo(contract).findFirstSync();
+
+    if (partyResult != null && contractResult != null) {
+      await verificationKeys.put(
+        sk.VerificationKey(
+          xParty: partyResult.xParty,
+          yContract: contractResult.yContract,
+          vks: jsonEncode(entities),
+        ),
+      );
+    }
+  }
+
+  @override
+  List<String>? getEntityVks(String party, String contract) {
+    final parties = _instance.partys;
+    final contracts = _instance.contracts;
+    final verificationKeys = _instance.verificationKeys;
+
+    final partyResult = parties.where().filter().nameEqualTo(party).findFirstSync();
+    final contractResult = contracts.where().filter().contractEqualTo(contract).findFirstSync();
+
+    if (partyResult != null && contractResult != null) {
+      final verificationKeyResult = verificationKeys
+          .where()
+          .filter()
+          .xPartyEqualTo(partyResult.xParty)
+          .and()
+          .yContractEqualTo(contractResult.yContract)
+          .findFirstSync();
+
+      if (verificationKeyResult != null) {
+        return jsonDecode(verificationKeyResult.vks);
+      }
+    }
+
+    return null;
+  }
+
+  @override
+  Future<void> addNewLockTemplate(String contract, LockTemplate lockTemplate) async {
+    final contracts = _instance.contracts;
+
+    final contractResult = contracts.where().sortByYContractDesc().findFirstSync();
+
+    final yContract = contractResult != null ? contractResult.yContract + 1 : 1;
+
+    await contracts.put(
+      Contract(
+        contract: contract,
+        yContract: yContract,
+        lock: jsonEncode(lockTemplate),
+      ),
+    );
+  }
+
+  @override
+  LockTemplate? getLockTemplate(String contract) {
+    final contracts = _instance.contracts;
+
+    final contractResult = contracts.where().filter().contractEqualTo(contract).findFirstSync();
+
+    if (contractResult == null) return null;
+    return LockTemplate.fromJson(jsonDecode(contractResult.lock));
+  }
+
+  @override
+  Lock? getLock(String party, String contract, int nextState) {
+    final lockTemplate = getLockTemplate(contract);
+    final entityVks = getEntityVks(party, contract);
+
+    if (lockTemplate == null || entityVks == null) return null;
+
+    final childVks = entityVks.map((vk) {
+      final fullKey = VerificationKey.fromBuffer(Encoding().decodeFromBase58Check(vk).get());
+      return api.deriveChildVerificationKey(fullKey, nextState);
+    });
+    final res = lockTemplate.build(childVks.toList());
+
+    return res.isRight ? res.right! : null;
   }
 }
