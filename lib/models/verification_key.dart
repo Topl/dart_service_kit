@@ -8,7 +8,7 @@ class VerificationKey {
 
   late int xParty;
   late int yContract;
-  late List<int> vks;
+  late String vks;
 
   VerificationKey({required this.xParty, required this.yContract, required this.vks});
 }

@@ -11,8 +11,8 @@ class Cartesian {
   final int zState;
   final String lockPredicate;
   final String address;
-  final String routine;
-  final List<int> vk;
+  String? routine;
+  String? vk;
 
   Cartesian(
       {
@@ -21,6 +21,6 @@ class Cartesian {
       required this.zState,
       required this.lockPredicate,
       required this.address,
-      required this.routine,
-      required this.vk});
+      this.routine,
+      this.vk});
 }
