@@ -1,7 +1,18 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:brambldart/brambldart.dart';
+import 'package:brambldart/brambldart.dart'
+    show
+        Either,
+        Encoding,
+        HeightTemplate,
+        IntExtension,
+        LockTemplate,
+        PredicateTemplate,
+        SignatureTemplate,
+        SizedEvidence,
+        WalletApi,
+        WalletStateAlgebra;
 import 'package:fixnum/fixnum.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:isar/isar.dart';
@@ -56,8 +67,8 @@ class WalletStateApi implements WalletStateAlgebra {
       await verificationKeys.put(sk.VerificationKey(
           xParty: 1,
           yContract: 1,
-          vks: Encoding()
-              .encodeToBase58(vk.writeToBuffer()))); // TODO(ultimaterex): figure out if encoding to stringbase 58 is better
+          vks: Encoding().encodeToBase58(
+              vk.writeToBuffer()))); // TODO(ultimaterex): figure out if encoding to stringbase 58 is better
       await verificationKeys
           .put(sk.VerificationKey(xParty: 0, yContract: 2, vks: Encoding().encodeToBase58(Uint8List(0))));
 

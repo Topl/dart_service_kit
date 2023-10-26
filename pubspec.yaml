@@ -15,7 +15,11 @@ dependencies:
 
   #topl
   topl_common: ^2.1.0
-  brambldart: 2.0.0-alpha.1
+  # brambldart: 2.0.0-alpha.1
+  brambldart:
+    git:
+      url: https://github.com/Topl/BramblDart.git
+      ref: service-kit-extensions
 
   # types
   fixnum: ^1.1.0

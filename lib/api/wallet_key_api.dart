@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:brambldart/brambldart.dart';
+import 'package:brambldart/brambldart.dart' show Either, Unit, VaultStore, WalletKeyApiAlgebra, WalletKeyException, WithResultExtension;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class WalletKeyApi implements WalletKeyApiAlgebra {
