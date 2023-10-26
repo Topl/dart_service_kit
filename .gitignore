@@ -36,3 +36,5 @@ build/
 *.g.dart
 .flutter-plugins
 .flutter-plugins-dependencies
+
+
