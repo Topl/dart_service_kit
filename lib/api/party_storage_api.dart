@@ -33,10 +33,10 @@ class PartyStorageApi implements brambl.PartyStorageAlgebra, ParseResult<brambl.
   }
 }
 
-extension WalletContractExtension on WalletEntity {
+extension WalletEntityExtension on WalletEntity {
   brambl.WalletEntity get asBrambl => brambl.WalletEntity(xIdx, name);
 }
 
-extension BramblWalletContractExtension on brambl.WalletEntity {
+extension BramblWalletEntityExtension on brambl.WalletEntity {
   WalletEntity get asSK => WalletEntity(xIdx, name);
 }
