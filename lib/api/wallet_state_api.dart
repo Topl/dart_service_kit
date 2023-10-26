@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:brambl_dart/brambl_dart.dart';
+import 'package:brambldart/brambldart.dart';
 import 'package:fixnum/fixnum.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:isar/isar.dart';
@@ -57,7 +57,7 @@ class WalletStateApi implements WalletStateAlgebra {
           xParty: 1,
           yContract: 1,
           vks: Encoding()
-              .encodeToBase58(vk.writeToBuffer()))); // TODO: figure out if encoding to stringbase 58 is better
+              .encodeToBase58(vk.writeToBuffer()))); // TODO(ultimaterex): figure out if encoding to stringbase 58 is better
       await verificationKeys
           .put(sk.VerificationKey(xParty: 0, yContract: 2, vks: Encoding().encodeToBase58(Uint8List(0))));
 
@@ -285,10 +285,10 @@ class WalletStateApi implements WalletStateAlgebra {
     throw Exception('No address found');
   }
 
-  // TODO: We are not yet supporting Digest propositions in brambl-cli
+  // TODO(ultimaterex): We are not yet supporting Digest propositions in brambl-cli
   @override
   Preimage? getPreimage(Proposition_Digest digestProposition) {
-    // TODO: implement getPreimage
+    // TODO(ultimaterex): implement getPreimage
     throw UnimplementedError();
   }
 

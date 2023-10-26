@@ -1,4 +1,4 @@
-import 'package:brambl_dart/brambl_dart.dart' as brambl;
+import 'package:brambldart/brambldart.dart' as brambl;
 import 'package:isar/isar.dart';
 import 'package:servicekit/api/abstractions/parse_result.dart';
 import 'package:servicekit/models/wallet_contract.dart';

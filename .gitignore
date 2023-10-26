@@ -33,4 +33,4 @@ build/
 
 
 # Generated Dart Files
-*g.dart
+*.g.dart

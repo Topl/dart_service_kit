@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:brambl_dart/brambl_dart.dart';
+import 'package:brambldart/brambldart.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class WalletKeyApi implements WalletKeyApiAlgebra {
@@ -8,7 +8,8 @@ class WalletKeyApi implements WalletKeyApiAlgebra {
 
   const WalletKeyApi(this._storage);
 
-  WalletKeyException _vaultStoreDoesNotExist(name) => WalletKeyException.vaultStoreDoesNotExist(context: "VaultStore at $name does not exist");
+  WalletKeyException _vaultStoreDoesNotExist(name) =>
+      WalletKeyException.vaultStoreDoesNotExist(context: "VaultStore at $name does not exist");
 
   /// Updates the main key vault store.
   ///
