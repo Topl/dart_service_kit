@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+
 import 'package:brambldart/brambldart.dart'
     show
         Either,
@@ -13,12 +14,14 @@ import 'package:brambldart/brambldart.dart'
         SizedEvidence,
         WalletApi,
         WalletStateAlgebra;
+
 import 'package:fixnum/fixnum.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:isar/isar.dart';
 import 'package:servicekit/api/wallet_key_api.dart';
 import 'package:servicekit/models/cartesian.dart';
 import 'package:servicekit/models/contract.dart';
+
 import 'package:servicekit/models/fellowship.dart';
 import 'package:servicekit/models/verification_key.dart' as sk;
 import 'package:topl_common/proto/brambl/models/address.pb.dart';
@@ -26,14 +29,17 @@ import 'package:topl_common/proto/brambl/models/box/lock.pb.dart';
 import 'package:topl_common/proto/brambl/models/identifier.pb.dart';
 import 'package:topl_common/proto/brambl/models/indices.pb.dart';
 import 'package:topl_common/proto/quivr/models/proposition.pb.dart';
+
 import 'package:topl_common/proto/quivr/models/shared.pb.dart'
     show Preimage, VerificationKey;
 
 /// An implementation of the WalletStateAlgebra that uses a database to store state information.
 
 class WalletStateApi implements WalletStateAlgebra {
+
   WalletStateApi(this._instance, this._secureStorage)
       : api = WalletApi(WalletKeyApi(_secureStorage));
+  
   final Isar _instance;
   final FlutterSecureStorage _secureStorage;
   final WalletApi api;
@@ -399,6 +405,7 @@ class WalletStateApi implements WalletStateAlgebra {
     final contractResult =
         contracts.where().sortByYContractDesc().findFirstSync();
 
+
     final yContract = contractResult != null ? contractResult.yContract + 1 : 1;
 
     await contracts.put(
@@ -417,6 +424,7 @@ class WalletStateApi implements WalletStateAlgebra {
     final contractResult =
         contracts.where().filter().contractEqualTo(contract).findFirstSync();
 
+
     if (contractResult == null) return null;
     return LockTemplate.fromJson(jsonDecode(contractResult.lock));
   }
@@ -426,9 +434,11 @@ class WalletStateApi implements WalletStateAlgebra {
     final lockTemplate = getLockTemplate(contract);
     final entityVks = getEntityVks(fellowship, contract);
 
+
     if (lockTemplate == null || entityVks == null) return null;
 
     final childVks = entityVks.map((vk) {
+
       final fullKey = VerificationKey.fromBuffer(
           Encoding().decodeFromBase58Check(vk).get());
       return api.deriveChildVerificationKey(fullKey, nextState);

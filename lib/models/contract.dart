@@ -2,6 +2,7 @@ import 'package:isar/isar.dart';
 
 part 'contract.g.dart';
 
+
 @Collection()
 class Contract {
   Contract(

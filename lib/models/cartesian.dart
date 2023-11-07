@@ -4,6 +4,7 @@ part 'cartesian.g.dart';
 
 @Collection()
 class Cartesian {
+
   Cartesian(
       {required this.xFellowship,
       required this.yContract,
@@ -16,6 +17,7 @@ class Cartesian {
   Id id = Isar.autoIncrement;
 
   final int xFellowship;
+
   final int yContract;
   final int zState;
   final String lockPredicate;
