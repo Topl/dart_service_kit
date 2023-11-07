@@ -4,10 +4,10 @@ import 'package:isar/isar.dart';
 part 'wallet_entity.g.dart';
 
 @Collection()
-class WalletEntity extends brambl.WalletEntity {
+class WalletFellowship extends brambl.WalletFellowship {
+  WalletFellowship(this.xIdx, String name) : super(xIdx, name);
+
   @override
   // ignore: overridden_fields
   final Id xIdx;
-
-  WalletEntity(this.xIdx, String name) : super(xIdx, name);
 }

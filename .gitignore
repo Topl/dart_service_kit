@@ -34,3 +34,7 @@ build/
 
 # Generated Dart Files
 *.g.dart
+.flutter-plugins
+.flutter-plugins-dependencies
+
+
