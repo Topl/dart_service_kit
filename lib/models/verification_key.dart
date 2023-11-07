@@ -4,11 +4,12 @@ part 'verification_key.g.dart';
 
 @Collection()
 class VerificationKey {
+  VerificationKey(
+      {required this.xFellowship, required this.yContract, required this.vks});
+
   Id id = Isar.autoIncrement;
 
-  late int xParty;
+  late int xFellowship;
   late int yContract;
   late String vks;
-
-  VerificationKey({required this.xParty, required this.yContract, required this.vks});
 }

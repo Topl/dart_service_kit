@@ -1,3 +1,5 @@
-## 0.0.1
 
-* TODO: Describe initial release.
+
+## 2.0.0-alpha.1
+- Initial version
+- Added SimpleTransactionAlgebra feature to the toolkit
