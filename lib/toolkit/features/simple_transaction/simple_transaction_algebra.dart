@@ -22,17 +22,18 @@ import 'package:topl_common/proto/genus/genus_models.pb.dart';
 import 'package:topl_common/proto/quivr/models/shared.pb.dart';
 
 abstract class SimpleTransactionAlgebraDefinition {
-  Future<Either<SimpleTransactionAlgebraError, IoTransaction>> createSimpleTransactionFromParams({
+  Future<Either<SimpleTransactionAlgebraError, IoTransaction>>
+      createSimpleTransactionFromParams({
     required String keyfile,
     required String password,
-    required String fromParty,
+    required String fromFellowship,
     required String fromContract,
     int? someFromState,
-    String? someChangeParty,
+    String? someChangeFellowship,
     String? someChangeContract,
     int? someChangeState,
     LockAddress? someToAddress,
-    String? someToParty,
+    String? someToFellowship,
     String? someToContract,
     required int amount,
     required int fee,
@@ -60,7 +61,7 @@ class SimpleTransactionAlgebra extends SimpleTransactionAlgebraDefinition {
   /// Throws a [CannotSerializeProtobufFile] if there is a problem serializing the transaction.
   Future<IoTransaction> buildTransaction(
     List<Txo> txos,
-    String? someChangeParty,
+    String? someChangeFellowship,
     String? someChangeContract,
     int? someChangeState,
     Lock_Predicate predicateFundsToUnlock,
@@ -74,7 +75,8 @@ class SimpleTransactionAlgebra extends SimpleTransactionAlgebraDefinition {
   ) async {
     try {
       final lockChange = await transactionBuilderApi.lockAddress(lockForChange);
-      final eitherIoTransaction = await transactionBuilderApi.buildTransferAmountTransaction(
+      final eitherIoTransaction =
+          await transactionBuilderApi.buildTransferAmountTransaction(
         typeIdentifier,
         txos,
         predicateFundsToUnlock,
@@ -87,9 +89,11 @@ class SimpleTransactionAlgebra extends SimpleTransactionAlgebraDefinition {
       final ioTransaction = eitherIoTransaction.fold((l) => throw l, (r) => r);
 
       bool nextIndicesExist = false;
-      if (someChangeParty != null && someChangeContract != null && someChangeState != null) {
+      if (someChangeFellowship != null &&
+          someChangeContract != null &&
+          someChangeState != null) {
         nextIndicesExist = !(walletStateApi.getCurrentIndicesForFunds(
-              someChangeParty,
+              someChangeFellowship,
               someChangeContract,
               someChangeState,
             ) ==
@@ -97,11 +101,15 @@ class SimpleTransactionAlgebra extends SimpleTransactionAlgebraDefinition {
       }
 
       if (ioTransaction.outputs.length >= 2 && !nextIndicesExist) {
-        final lockAddress = await transactionBuilderApi.lockAddress(lockForChange);
-        final vk = someNextIndices != null ? walletApi.deriveChildKeys(keyPair, someNextIndices) : null;
+        final lockAddress =
+            await transactionBuilderApi.lockAddress(lockForChange);
+        final vk = someNextIndices != null
+            ? walletApi.deriveChildKeys(keyPair, someNextIndices)
+            : null;
 
         walletStateApi.updateWalletState(
-          Encoding().encodeToBase58Check(lockForChange.predicate.writeToBuffer()),
+          Encoding()
+              .encodeToBase58Check(lockForChange.predicate.writeToBuffer()),
           AddressCodecs.encode(lockAddress),
           vk != null ? "ExtendedEd25519" : null,
           vk != null ? Encoding().encodeToBase58(vk.writeToBuffer()) : null,
@@ -115,17 +123,18 @@ class SimpleTransactionAlgebra extends SimpleTransactionAlgebraDefinition {
   }
 
   @override
-  Future<Either<SimpleTransactionAlgebraError, IoTransaction>> createSimpleTransactionFromParams({
+  Future<Either<SimpleTransactionAlgebraError, IoTransaction>>
+      createSimpleTransactionFromParams({
     required String keyfile,
     required String password,
-    required String fromParty,
+    required String fromFellowship,
     required String fromContract,
     int? someFromState,
-    String? someChangeParty,
+    String? someChangeFellowship,
     String? someChangeContract,
     int? someChangeState,
     LockAddress? someToAddress,
-    String? someToParty,
+    String? someToFellowship,
     String? someToContract,
     required int amount,
     required int fee,
@@ -133,25 +142,32 @@ class SimpleTransactionAlgebra extends SimpleTransactionAlgebraDefinition {
   }) async {
     try {
       final keyPair = await walletManagementUtils.loadKeys(keyfile, password);
-      final someCurrentIndices = walletStateApi.getCurrentIndicesForFunds(fromParty, fromContract, someFromState);
-      final predicateFundsToUnlock =
-          someCurrentIndices != null ? walletStateApi.getLockByIndex(someCurrentIndices) : null;
+      final someCurrentIndices = walletStateApi.getCurrentIndicesForFunds(
+          fromFellowship, fromContract, someFromState);
+      final predicateFundsToUnlock = someCurrentIndices != null
+          ? walletStateApi.getLockByIndex(someCurrentIndices)
+          : null;
 
       Indices? someNextIndices;
-      if (someChangeParty != null && someChangeContract != null && someChangeState != null) {
-        someNextIndices =
-            walletStateApi.getCurrentIndicesForFunds(someChangeParty, someChangeContract, someChangeState);
+      if (someChangeFellowship != null &&
+          someChangeContract != null &&
+          someChangeState != null) {
+        someNextIndices = walletStateApi.getCurrentIndicesForFunds(
+            someChangeFellowship, someChangeContract, someChangeState);
       } else {
-        someNextIndices = walletStateApi.getNextIndicesForFunds(fromParty, fromContract);
+        someNextIndices =
+            walletStateApi.getNextIndicesForFunds(fromFellowship, fromContract);
       }
 
       Lock? changeLock;
       if (someNextIndices != null) {
-        changeLock = walletStateApi.getLock(fromParty, fromContract, someNextIndices.z);
+        changeLock = walletStateApi.getLock(
+            fromFellowship, fromContract, someNextIndices.z);
       }
 
       final fromAddress = predicateFundsToUnlock != null
-          ? await transactionBuilderApi.lockAddress(Lock(predicate: predicateFundsToUnlock))
+          ? await transactionBuilderApi
+              .lockAddress(Lock(predicate: predicateFundsToUnlock))
           : null;
 
       List<Txo>? txos;
@@ -162,14 +178,17 @@ class SimpleTransactionAlgebra extends SimpleTransactionAlgebraDefinition {
       }
 
       txos = txos
-          .where((x) => !x.transactionOutput.value.hasTopl() && !x.transactionOutput.value.hasUpdateProposal())
+          .where((x) =>
+              !x.transactionOutput.value.hasTopl() &&
+              !x.transactionOutput.value.hasUpdateProposal())
           .toList();
 
       Either<EncodingError, LockAddress> toAddressOpt;
       if (someToAddress != null) {
         toAddressOpt = Either.right(someToAddress);
-      } else if (someToParty != null && someToContract != null) {
-        final addrStr = walletStateApi.getAddress(someToParty, someToContract, null);
+      } else if (someToFellowship != null && someToContract != null) {
+        final addrStr =
+            walletStateApi.getAddress(someToFellowship, someToContract, null);
         toAddressOpt = AddressCodecs.decode(addrStr!);
       } else {
         toAddressOpt = Either.left(InvalidInputString());
@@ -180,7 +199,7 @@ class SimpleTransactionAlgebra extends SimpleTransactionAlgebraDefinition {
       } else if (changeLock != null && toAddressOpt.isRight) {
         return (await buildTransaction(
           txos,
-          someChangeParty,
+          someChangeFellowship,
           someChangeContract,
           someChangeState,
           predicateFundsToUnlock!,

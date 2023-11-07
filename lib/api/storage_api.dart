@@ -3,7 +3,7 @@ import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:servicekit/models/cartesian.dart';
 import 'package:servicekit/models/contract.dart';
-import 'package:servicekit/models/party.dart';
+import 'package:servicekit/models/fellowship.dart';
 import 'package:servicekit/models/verification_key.dart';
 import 'package:servicekit/models/wallet_contract.dart';
 import 'package:servicekit/models/wallet_entity.dart';
@@ -23,10 +23,10 @@ class StorageApi {
   static const schemas = [
     CartesianSchema,
     ContractSchema,
-    PartySchema,
+    FellowshipSchema,
     VerificationKeySchema,
     WalletContractSchema,
-    WalletEntitySchema,
+    WalletFellowshipSchema,
   ];
 
   late Isar _isar;
@@ -43,7 +43,7 @@ class StorageApi {
       _isar = instance;
       return _isar;
     }
-    
+
     final dir = await getApplicationDocumentsDirectory();
     _isar = await Isar.open(schemas, directory: dir.path);
   }
