@@ -16,7 +16,7 @@ class StorageApi {
   /// with default settings.
   StorageApi({Isar? isar, FlutterSecureStorage? secureStorage}) {
     _secureStorage = secureStorage ?? _initSecureStorage();
-    _initIsar();
+    _initIsar(isar);
   }
 
   /// List of all schemas used in the library.
@@ -38,11 +38,14 @@ class StorageApi {
   /// Initializes Isar with the schemas defined in this class.
   ///
   /// If [set] is `true`, the created Isar instance will be assigned to [_isar].
-  Future<Isar> _initIsar({bool set = false}) async {
+  Future _initIsar(Isar? instance) async {
+    if (instance != null) {
+      _isar = instance;
+      return _isar;
+    }
+    
     final dir = await getApplicationDocumentsDirectory();
-    final isar = await Isar.open(schemas, directory: dir.path);
-    if (set) _isar = isar;
-    return _isar;
+    _isar = await Isar.open(schemas, directory: dir.path);
   }
 
   /// Initializes FlutterSecureStorage with default settings.

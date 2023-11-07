@@ -31,11 +31,10 @@ import 'package:topl_common/proto/quivr/models/shared.pb.dart' show Preimage, Ve
 /// An implementation of the WalletStateAlgebra that uses a database to store state information.
 
 class WalletStateApi implements WalletStateAlgebra {
+  WalletStateApi(this._instance, this._secureStorage) : api = WalletApi(WalletKeyApi(_secureStorage));
   final Isar _instance;
   final FlutterSecureStorage _secureStorage;
   final WalletApi api;
-
-  WalletStateApi(this._instance, this._secureStorage) : api = WalletApi(WalletKeyApi(_secureStorage));
 
   @override
   Future<void> initWalletState(int networkId, int ledgerId, VerificationKey vk) async {
@@ -207,8 +206,7 @@ class WalletStateApi implements WalletStateAlgebra {
     final parties = _instance.partys;
 
     final partyResult = parties.where().filter().nameEqualTo(party).findFirstSync();
-
-    return partyResult == null ? false : true;
+    return partyResult != null;
   }
 
   bool validateContract(String contract) {
@@ -216,7 +214,7 @@ class WalletStateApi implements WalletStateAlgebra {
 
     final contractResult = contracts.where().filter().contractEqualTo(contract).findFirstSync();
 
-    return contractResult == null ? false : true;
+    return contractResult != null;
   }
 
   @override

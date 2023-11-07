@@ -4,13 +4,13 @@ import 'package:brambldart/brambldart.dart' show Either, VaultStore, WalletApi, 
 import 'package:topl_common/proto/quivr/models/shared.pb.dart';
 
 class WalletManagementUtils {
-  final WalletApi walletApi;
-  final WalletKeyApiAlgebra dataApi;
 
   WalletManagementUtils({
     required this.walletApi,
     required this.dataApi,
   });
+  final WalletApi walletApi;
+  final WalletKeyApiAlgebra dataApi;
 
   Future<Either<Exception, KeyPair>> loadKeys(String keyfile, String password) async {
     try {

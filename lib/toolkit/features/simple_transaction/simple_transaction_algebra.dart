@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:brambldart/brambldart.dart'
     show
         AddressCodecs,
@@ -10,20 +8,21 @@ import 'package:brambldart/brambldart.dart'
         InvalidInputString,
         LongAsInt128,
         TransactionBuilderApi,
-        Unit,
         ValueTypeIdentifier,
         WalletApi,
-        WalletStateAlgebra;
-import 'package:servicekit/toolkit/features/simpletransaction/simple_transaction_algebra_error.dart';
+        WalletStateAlgebra,
+        WithResultExtension;
+import 'package:servicekit/toolkit/features/simple_transaction/simple_transaction_algebra_error.dart';
 import 'package:servicekit/toolkit/features/wallet/wallet_management_utils.dart';
 import 'package:topl_common/proto/brambl/models/address.pb.dart';
 import 'package:topl_common/proto/brambl/models/box/lock.pb.dart';
 import 'package:topl_common/proto/brambl/models/indices.pb.dart';
+import 'package:topl_common/proto/brambl/models/transaction/io_transaction.pb.dart';
 import 'package:topl_common/proto/genus/genus_models.pb.dart';
 import 'package:topl_common/proto/quivr/models/shared.pb.dart';
 
 abstract class SimpleTransactionAlgebraDefinition {
-  Future<Either<SimpleTransactionAlgebraError, Unit>> createSimpleTransactionFromParams({
+  Future<Either<SimpleTransactionAlgebraError, IoTransaction>> createSimpleTransactionFromParams({
     required String keyfile,
     required String password,
     required String fromParty,
@@ -37,18 +36,11 @@ abstract class SimpleTransactionAlgebraDefinition {
     String? someToContract,
     required int amount,
     required int fee,
-    required String outputFile,
     required ValueTypeIdentifier tokenType,
   });
 }
 
 class SimpleTransactionAlgebra extends SimpleTransactionAlgebraDefinition {
-  final WalletApi walletApi;
-  final WalletStateAlgebra walletStateApi;
-  final GenusQueryAlgebra utxoAlgebra;
-  final TransactionBuilderApi transactionBuilderApi;
-  final WalletManagementUtils walletManagementUtils;
-
   SimpleTransactionAlgebra({
     required this.walletApi,
     required this.walletStateApi,
@@ -57,7 +49,16 @@ class SimpleTransactionAlgebra extends SimpleTransactionAlgebraDefinition {
     required this.walletManagementUtils,
   });
 
-  Future buildTransaction(
+  final WalletApi walletApi;
+  final WalletStateAlgebra walletStateApi;
+  final GenusQueryAlgebra utxoAlgebra;
+  final TransactionBuilderApi transactionBuilderApi;
+  final WalletManagementUtils walletManagementUtils;
+
+  /// Builds a transaction.
+  ///
+  /// Throws a [CannotSerializeProtobufFile] if there is a problem serializing the transaction.
+  Future<IoTransaction> buildTransaction(
     List<Txo> txos,
     String? someChangeParty,
     String? someChangeContract,
@@ -69,7 +70,6 @@ class SimpleTransactionAlgebra extends SimpleTransactionAlgebraDefinition {
     int fee,
     Indices? someNextIndices,
     KeyPair keyPair,
-    String outputFile,
     ValueTypeIdentifier typeIdentifier,
   ) async {
     try {
@@ -88,14 +88,12 @@ class SimpleTransactionAlgebra extends SimpleTransactionAlgebraDefinition {
 
       bool nextIndicesExist = false;
       if (someChangeParty != null && someChangeContract != null && someChangeState != null) {
-        nextIndicesExist = walletStateApi.getCurrentIndicesForFunds(
-                  someChangeParty,
-                  someChangeContract,
-                  someChangeState,
-                ) ==
-                null
-            ? false
-            : true;
+        nextIndicesExist = !(walletStateApi.getCurrentIndicesForFunds(
+              someChangeParty,
+              someChangeContract,
+              someChangeState,
+            ) ==
+            null);
       }
 
       if (ioTransaction.outputs.length >= 2 && !nextIndicesExist) {
@@ -110,17 +108,14 @@ class SimpleTransactionAlgebra extends SimpleTransactionAlgebraDefinition {
           someNextIndices!, // TODO(ultimaterex): Figure out why nullable is allowed but we don't have a null path
         );
       }
-
-      final fos = File(outputFile).openWrite();
-      fos.write(ioTransaction);
-      await fos.close();
+      return ioTransaction;
     } catch (e) {
       throw CannotSerializeProtobufFile('Cannot write to file');
     }
   }
 
   @override
-  Future<Either<SimpleTransactionAlgebraError, Unit>> createSimpleTransactionFromParams({
+  Future<Either<SimpleTransactionAlgebraError, IoTransaction>> createSimpleTransactionFromParams({
     required String keyfile,
     required String password,
     required String fromParty,
@@ -134,7 +129,6 @@ class SimpleTransactionAlgebra extends SimpleTransactionAlgebraDefinition {
     String? someToContract,
     required int amount,
     required int fee,
-    required String outputFile,
     required ValueTypeIdentifier tokenType,
   }) async {
     try {
@@ -184,7 +178,7 @@ class SimpleTransactionAlgebra extends SimpleTransactionAlgebraDefinition {
       if (txos.isEmpty) {
         throw CreateTxError('No LVL txos found');
       } else if (changeLock != null && toAddressOpt.isRight) {
-        await buildTransaction(
+        return (await buildTransaction(
           txos,
           someChangeParty,
           someChangeContract,
@@ -196,16 +190,14 @@ class SimpleTransactionAlgebra extends SimpleTransactionAlgebraDefinition {
           fee,
           someNextIndices,
           keyPair.get(),
-          outputFile,
           tokenType,
-        );
+        ))
+            .withResult((p0) => Either.right(p0));
       } else if (changeLock == null) {
         throw CreateTxError('Unable to generate change lock');
       } else {
         throw CreateTxError('Unable to derive recipient address');
       }
-
-      return Either.unit();
     } catch (e) {
       if (e is SimpleTransactionAlgebraError) {
         return Either.left(e);

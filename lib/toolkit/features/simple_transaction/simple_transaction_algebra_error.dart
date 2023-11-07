@@ -1,29 +1,28 @@
 abstract class SimpleTransactionAlgebraError implements Exception {
-  final String description;
-
   SimpleTransactionAlgebraError(this.description);
+  final String description;
 }
 
 class CannotInitializeProtobuf extends SimpleTransactionAlgebraError {
-  CannotInitializeProtobuf(String description) : super(description);
+  CannotInitializeProtobuf(super.description);
 }
 
 class InvalidProtobufFile extends SimpleTransactionAlgebraError {
-  InvalidProtobufFile(String description) : super(description);
+  InvalidProtobufFile(super.description);
 }
 
 class CannotSerializeProtobufFile extends SimpleTransactionAlgebraError {
-  CannotSerializeProtobufFile(String description) : super(description);
+  CannotSerializeProtobufFile(super.description);
 }
 
 class NetworkProblem extends SimpleTransactionAlgebraError {
-  NetworkProblem(String description) : super(description);
+  NetworkProblem(super.description);
 }
 
 class UnexpectedError extends SimpleTransactionAlgebraError {
-  UnexpectedError(String description) : super(description);
+  UnexpectedError(super.description);
 }
 
 class CreateTxError extends SimpleTransactionAlgebraError {
-  CreateTxError(String description) : super(description);
+  CreateTxError(super.description);
 }

@@ -4,9 +4,9 @@ import 'package:brambldart/brambldart.dart' show Either, Unit, VaultStore, Walle
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class WalletKeyApi implements WalletKeyApiAlgebra {
-  final FlutterSecureStorage _storage;
-
   const WalletKeyApi(this._storage);
+
+  final FlutterSecureStorage _storage;
 
   WalletKeyException _vaultStoreDoesNotExist(name) =>
       WalletKeyException.vaultStoreDoesNotExist(context: "VaultStore at $name does not exist");
