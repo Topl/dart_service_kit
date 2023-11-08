@@ -33,6 +33,6 @@ build/
 
 
 # Generated Dart Files
-*.g.dart
+# *.g.dart
 .flutter-plugins
 .flutter-plugins-dependencies

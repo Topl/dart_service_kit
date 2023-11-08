@@ -41,6 +41,7 @@ class WalletStateApi implements WalletStateAlgebra {
       : api = WalletApi(WalletKeyApi(_secureStorage));
   
   final Isar _instance;
+  // ignore: unused_field
   final FlutterSecureStorage _secureStorage;
   final WalletApi api;
 
@@ -253,7 +254,9 @@ class WalletStateApi implements WalletStateAlgebra {
   @override
   Either<String, Indices> validateCurrentIndicesForFunds(
       String fellowship, String contract, int? someState) {
+    // ignore: unused_local_variable
     final p = validateFellowship(fellowship);
+    // ignore: unused_local_variable
     final c = validateContract(contract);
     final indices = getCurrentIndicesForFunds(fellowship, contract, someState);
 
