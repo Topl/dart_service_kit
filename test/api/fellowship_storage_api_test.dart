@@ -14,6 +14,7 @@ main() {
     await base.walletStateApi.initWalletState(
       NetworkConstants.privateNetworkId,
       NetworkConstants.mainNetworkId,
+      // ignore: avoid_dynamic_calls
       base.mockMainKeyPair().verificationKey,
     );
 
