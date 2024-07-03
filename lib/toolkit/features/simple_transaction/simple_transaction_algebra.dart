@@ -80,7 +80,7 @@ class SimpleTransactionAlgebra extends SimpleTransactionAlgebraDefinition {
         typeIdentifier,
         txos,
         predicateFundsToUnlock,
-        amount.toInt128(),
+        amount,
         recipientLockAddress,
         lockChange,
         fee,
