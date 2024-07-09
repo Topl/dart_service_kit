@@ -1,15 +1,18 @@
-import 'package:isar/isar.dart';
+import 'package:sembast/sembast.dart';
 
-part 'verification_key.g.dart';
-
-@Collection()
 class VerificationKey {
   VerificationKey(
       {required this.xFellowship, required this.yContract, required this.vks});
 
-  Id id = Isar.autoIncrement;
-
   late int xFellowship;
   late int yContract;
   late String vks;
+
+  Map<String, Object?> get toSembast => {
+        "xFellowship": xFellowship,
+        "yContract": yContract,
+        "vks": vks,
+      };
 }
+
+final verificationKeysStore = intMapStoreFactory.store("verificationKeys");
