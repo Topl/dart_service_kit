@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:brambldart/brambldart.dart'
     show
+        AddressCodecs,
         Either,
         Encoding,
         HeightTemplate,
@@ -46,99 +47,93 @@ class WalletStateApi implements WalletStateAlgebra {
   @override
   Future<void> initWalletState(
       int networkId, int ledgerId, quivrShared.VerificationKey vk) async {
-    await _instance.transaction((txn) async {
-      final defaultTemplate = PredicateTemplate(
-        [SignatureTemplate("ExtendedEd25519", 0)],
-        1,
-      );
+    final defaultTemplate = PredicateTemplate(
+      [SignatureTemplate("ExtendedEd25519", 0)],
+      1,
+    );
 
-      final genesisTemplate = PredicateTemplate(
-        [HeightTemplate('header', 1.toInt64, Int64.MAX_VALUE)],
-        1,
-      );
+    final genesisTemplate = PredicateTemplate(
+      [HeightTemplate('header', 1.toInt64, Int64.MAX_VALUE)],
+      1,
+    );
 
-      // Create parties
-      await fellowshipsStore.add(
-          txn, Fellowship(name: 'nofellowship', xFellowship: 0).toSembast);
-      await fellowshipsStore.add(
-          txn, Fellowship(name: 'self', xFellowship: 1).toSembast);
+    // Create parties
+    await fellowshipsStore.add(
+        _instance, Fellowship(name: 'nofellowship', xFellowship: 0).toSembast);
+    await fellowshipsStore.add(
+        _instance, Fellowship(name: 'self', xFellowship: 1).toSembast);
 
-      // Create contracts
-      await contractsStore.add(
-          txn,
-          Contract(
-                  contract: 'default',
-                  yContract: 1,
-                  lock: defaultTemplate.toJson().toString())
-              .toSembast);
-      await contractsStore.add(
-          txn,
-          Contract(
-                  contract: 'genesis',
-                  yContract: 2,
-                  lock: genesisTemplate.toJson().toString())
-              .toSembast);
+    // Create contracts
+    await contractsStore.add(
+        _instance,
+        Contract(
+                contract: 'default',
+                yContract: 1,
+                lock: jsonEncode(defaultTemplate.toJson()))
+            .toSembast);
+    await contractsStore.add(
+        _instance,
+        Contract(
+                contract: 'genesis',
+                yContract: 2,
+                lock: jsonEncode(genesisTemplate.toJson()))
+            .toSembast);
 
-      // Create verification keys
-      await verificationKeysStore.add(
-          txn,
-          sk.VerificationKey(
-                  xFellowship: 1,
-                  yContract: 1,
-                  vks: Encoding().encodeToBase58(vk.writeToBuffer()))
-              .toSembast); // TODO(ultimaterex): figure out if encoding to stringbase 58 is better
-      await verificationKeysStore.add(
-          txn,
-          sk.VerificationKey(
-                  xFellowship: 0,
-                  yContract: 2,
-                  vks: Encoding().encodeToBase58(Uint8List(0)))
-              .toSembast);
+    // Create verification keys
+    await verificationKeysStore.add(
+        _instance,
+        sk.VerificationKey(
+          xFellowship: 1,
+          yContract: 1,
+          vks: [Encoding().encodeToBase58Check(vk.writeToBuffer())],
+        ).toSembast); // TODO(ultimaterex): figure out if encoding to stringbase 58 is better
+    await verificationKeysStore.add(
+        _instance,
+        sk.VerificationKey(
+          xFellowship: 0,
+          yContract: 2,
+          vks: [],
+        ).toSembast);
 
-      final defaultSignatureLock = getLock("self", "default", 1)!; // unsafe
-      final signatureLockAddress = LockAddress(
-          network: networkId,
-          ledger: ledgerId,
-          id: LockId(
-              value:
-                  defaultSignatureLock.predicate.sizedEvidence.digest.value));
+    final defaultSignatureLock = getLock("self", "default", 1)!; // unsafe
+    final signatureLockAddress = LockAddress(
+        network: networkId,
+        ledger: ledgerId,
+        id: LockId(
+            value: defaultSignatureLock.predicate.sizedEvidence.digest.value));
 
-      final childVk = api.deriveChildVerificationKey(vk, 1);
-      final genesisHeightLock =
-          getLock("nofellowship", "genesis", 1)!; // unsafe
-      final heightLockAddress = LockAddress(
-          network: networkId,
-          ledger: ledgerId,
-          id: LockId(
-              value: genesisHeightLock.predicate.sizedEvidence.digest.value));
+    final childVk = api.deriveChildVerificationKey(vk, 1);
+    final genesisHeightLock = getLock("nofellowship", "genesis", 1)!; // unsafe
+    final heightLockAddress = LockAddress(
+        network: networkId,
+        ledger: ledgerId,
+        id: LockId(
+            value: genesisHeightLock.predicate.sizedEvidence.digest.value));
 
-      // Create cartesian coordinates
-      await cartesiansStore.add(
-          txn,
-          Cartesian(
-            xFellowship: 1,
-            yContract: 1,
-            zState: 1,
-            lockPredicate: Encoding()
-                .encodeToBase58(defaultSignatureLock.predicate.writeToBuffer()),
-            address:
-                Encoding().encodeToBase58(signatureLockAddress.writeToBuffer()),
-            routine: 'ExtendedEd25519',
-            vk: Encoding().encodeToBase58(childVk.writeToBuffer()),
-          ).toSembast);
+    // Create cartesian coordinates
+    await cartesiansStore.add(
+        _instance,
+        Cartesian(
+          xFellowship: 1,
+          yContract: 1,
+          zState: 1,
+          lockPredicate: Encoding().encodeToBase58Check(
+              defaultSignatureLock.predicate.writeToBuffer()),
+          address: AddressCodecs.encode(signatureLockAddress),
+          routine: 'ExtendedEd25519',
+          vk: Encoding().encodeToBase58Check(childVk.writeToBuffer()),
+        ).toSembast);
 
-      await cartesiansStore.add(
-          txn,
-          Cartesian(
-            xFellowship: 0,
-            yContract: 2,
-            zState: 1,
-            lockPredicate: Encoding()
-                .encodeToBase58(genesisHeightLock.predicate.writeToBuffer()),
-            address:
-                Encoding().encodeToBase58(heightLockAddress.writeToBuffer()),
-          ).toSembast);
-    });
+    await cartesiansStore.add(
+        _instance,
+        Cartesian(
+          xFellowship: 0,
+          yContract: 2,
+          zState: 1,
+          lockPredicate: Encoding()
+              .encodeToBase58Check(genesisHeightLock.predicate.writeToBuffer()),
+          address: AddressCodecs.encode(heightLockAddress),
+        ).toSembast);
   }
 
   @override
@@ -150,7 +145,7 @@ class WalletStateApi implements WalletStateAlgebra {
           Filter.equals("routine", signatureProposition.routine),
           Filter.equals(
               "vk",
-              Encoding().encodeToBase58(
+              Encoding().encodeToBase58Check(
                   signatureProposition.verificationKey.writeToBuffer())),
         ])));
 
@@ -222,7 +217,7 @@ class WalletStateApi implements WalletStateAlgebra {
           finder: Finder(
               filter: Filter.and([
                 Filter.equals("xFellowship", fellowshipResult["xFellowship"]),
-                Filter.equals("yContract", fellowshipResult["yContract"]),
+                Filter.equals("yContract", contractResult.key),
               ]),
               sortOrders: [SortOrder("zState", false)]));
 
@@ -282,7 +277,7 @@ class WalletStateApi implements WalletStateAlgebra {
           finder: Finder(
             filter: Filter.and([
               Filter.equals("xFellowship", fellowshipResult["xFellowship"]),
-              Filter.equals("yContract", fellowshipResult["yContract"]),
+              Filter.equals("yContract", contractResult.key),
               Filter.equals("zState", someState ?? 0),
             ]),
           ));
@@ -307,7 +302,7 @@ class WalletStateApi implements WalletStateAlgebra {
           finder: Finder(
             filter: Filter.and([
               Filter.equals("xFellowship", fellowshipResult["xFellowship"]),
-              Filter.equals("yContract", fellowshipResult["yContract"]),
+              Filter.equals("yContract", contractResult.key),
               Filter.equals("zState", someState ?? 0),
             ]),
           ));
@@ -360,8 +355,8 @@ class WalletStateApi implements WalletStateAlgebra {
         _instance,
         sk.VerificationKey(
           xFellowship: fellowshipResult["xFellowship"]! as int,
-          yContract: contractResult["yContract"]! as int,
-          vks: jsonEncode(entities),
+          yContract: contractResult.key,
+          vks: entities,
         ).toSembast,
       );
     }
@@ -376,16 +371,17 @@ class WalletStateApi implements WalletStateAlgebra {
         finder: Finder(filter: Filter.equals("contract", contract)));
 
     if (fellowshipResult != null && contractResult != null) {
-      final verificationKeyResult = cartesiansStore.findFirstSync(_instance,
-          finder: Finder(
-            filter: Filter.and([
-              Filter.equals("xFellowship", fellowshipResult["xFellowship"]),
-              Filter.equals("yContract", fellowshipResult["yContract"]),
-            ]),
-          ));
+      final verificationKeyResult =
+          verificationKeysStore.findFirstSync(_instance,
+              finder: Finder(
+                filter: Filter.and([
+                  Filter.equals("xFellowship", fellowshipResult["xFellowship"]),
+                  Filter.equals("yContract", contractResult.key),
+                ]),
+              ));
 
       if (verificationKeyResult != null) {
-        return jsonDecode(verificationKeyResult["vks"]! as String);
+        return (verificationKeyResult["vks"]! as List).cast<String>();
       }
     }
 

@@ -6,7 +6,7 @@ class VerificationKey {
 
   late int xFellowship;
   late int yContract;
-  late String vks;
+  late List<String> vks;
 
   Map<String, Object?> get toSembast => {
         "xFellowship": xFellowship,
