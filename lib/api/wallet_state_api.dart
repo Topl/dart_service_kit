@@ -6,10 +6,12 @@ import 'package:brambldart/brambldart.dart'
         AddressCodecs,
         Either,
         Encoding,
+        ExtendedEd25519,
         HeightTemplate,
         IntExtension,
         LockTemplate,
         PredicateTemplate,
+        SCrypt,
         SignatureTemplate,
         SizedEvidence,
         WalletApi,
@@ -36,8 +38,16 @@ import 'package:topl_common/proto/quivr/models/shared.pb.dart' as quivrShared;
 /// An implementation of the WalletStateAlgebra that uses a database to store state information.
 
 class WalletStateApi implements WalletStateAlgebra {
-  WalletStateApi(this._instance, this._secureStorage)
-      : api = WalletApi(WalletKeyApi(_secureStorage));
+  WalletStateApi(
+    this._instance,
+    this._secureStorage, {
+    ExtendedEd25519? extendedEd25519,
+    SCrypt? kdf,
+  }) : api = WalletApi(
+          WalletKeyApi(_secureStorage),
+          extendedEd25519Instance: extendedEd25519,
+          kdfInstance: kdf,
+        );
 
   final Database _instance;
   // ignore: unused_field
