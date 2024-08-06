@@ -1,10 +1,6 @@
-import 'package:isar/isar.dart';
+import 'package:sembast/sembast.dart';
 
-part 'cartesian.g.dart';
-
-@Collection()
 class Cartesian {
-
   Cartesian(
       {required this.xFellowship,
       required this.yContract,
@@ -14,8 +10,6 @@ class Cartesian {
       this.routine,
       this.vk});
 
-  Id id = Isar.autoIncrement;
-
   final int xFellowship;
 
   final int yContract;
@@ -24,4 +18,16 @@ class Cartesian {
   final String address;
   String? routine;
   String? vk;
+
+  Map<String, Object?> get toSembast => {
+        "xFellowship": xFellowship,
+        "yContract": yContract,
+        "zState": zState,
+        "lockPredicate": lockPredicate,
+        "address": address,
+        "routine": routine,
+        "vk": vk,
+      };
 }
+
+final cartesiansStore = intMapStoreFactory.store("cartesians");

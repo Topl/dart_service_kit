@@ -1,5 +1,5 @@
 import 'package:brambldart/brambldart.dart' as brambl;
-import 'package:isar/isar.dart';
+import 'package:sembast/sembast.dart';
 import 'package:servicekit/api/abstractions/parse_result.dart';
 import 'package:servicekit/models/wallet_contract.dart';
 
@@ -9,12 +9,12 @@ class ContractStorageApi
         ParseResult<brambl.WalletContract, WalletContract> {
   ContractStorageApi(this._instance);
 
-  final Isar _instance;
+  final Database _instance;
 
   @override
   Future<int> addContract(brambl.WalletContract walletContract) async {
     try {
-      return _instance.walletContracts.put(walletContract.asSK);
+      return walletContractsStore.add(_instance, walletContract.asSK.toSembast);
     } catch (e) {
       rethrow;
     }
@@ -24,9 +24,14 @@ class ContractStorageApi
   Future<List<brambl.WalletContract>> findContracts(
       List<brambl.WalletContract> walletContracts) async {
     try {
-      return (await _instance.walletContracts
-              .getAll(walletContracts.map((c) => c.yIdx).toList()))
-          .withResult((res) => parse(res));
+      final result = await walletContractsStore
+          .records(walletContracts.map((c) => c.yIdx))
+          .get(_instance);
+
+      return result
+          .map((json) => brambl.WalletContract(json!["yIdx"]! as int,
+              json!["name"]! as String, json!["lockTemplate"]! as String))
+          .toList();
     } catch (e) {
       rethrow;
     }

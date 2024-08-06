@@ -63,7 +63,7 @@ class WalletKeyApi implements WalletKeyApiAlgebra {
   Future<Either<WalletKeyException, Unit>> saveMainKeyVaultStore(
       VaultStore mainKeyVaultStore, String name) async {
     await _storage.write(
-        key: name, value: mainKeyVaultStore.toJson().toString());
+        key: name, value: json.encode(mainKeyVaultStore.toJson()));
     return Either.unit();
   }
 

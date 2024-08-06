@@ -14,13 +14,13 @@ class BaseSpec {
 
   late var walletKeyApi = WalletKeyApi(storageApi.secureStorage);
   late var walletApi = WalletApi(walletKeyApi);
-  final transactionBuilderApi = TransactionBuilderApi(
+  final transactionBuilderApi = const TransactionBuilderApi(
     NetworkConstants.privateNetworkId,
     NetworkConstants.mainLedgerId,
   );
 
   late var walletStateApi =
-      WalletStateApi(storageApi.isar, storageApi.secureStorage);
+      WalletStateApi(storageApi.sembast, storageApi.secureStorage);
 
   mockMainKeyPair() {
     final extendedEd25519Instance = ExtendedEd25519();
