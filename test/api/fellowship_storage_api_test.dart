@@ -6,7 +6,7 @@ import 'base.dart';
 
 main() {
   final base = BaseSpec();
-  late final fellowshipApi = FellowshipStorageApi(base.storageApi.isar);
+  late final fellowshipApi = FellowshipStorageApi(base.storageApi.sembast);
 
   test('addFellowship then findFellowships', () async {
     final fellowship = WalletFellowship(2, 'testFellowship');

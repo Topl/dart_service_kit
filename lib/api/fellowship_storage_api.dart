@@ -1,5 +1,5 @@
 import 'package:brambldart/brambldart.dart' as brambl;
-import 'package:isar/isar.dart';
+import 'package:sembast/sembast.dart';
 import 'package:servicekit/api/abstractions/parse_result.dart';
 import 'package:servicekit/models/wallet_entity.dart';
 
@@ -9,12 +9,12 @@ class FellowshipStorageApi
         ParseResult<brambl.WalletFellowship, WalletFellowship> {
   FellowshipStorageApi(this._instance);
 
-  final Isar _instance;
+  final Database _instance;
 
   @override
   Future<int> addFellowship(brambl.WalletFellowship walletEntity) {
     try {
-      return _instance.walletFellowships.put(walletEntity.asSK);
+      return walletFellowshipsStore.add(_instance, walletEntity.asSK.toSembast);
     } catch (e) {
       rethrow;
     }
@@ -24,9 +24,14 @@ class FellowshipStorageApi
   Future<List<brambl.WalletFellowship>> findFellowships(
       List<brambl.WalletFellowship> walletEntities) async {
     try {
-      return (await _instance.walletFellowships
-              .getAll(walletEntities.map((c) => c.xIdx).toList()))
-          .withResult((res) => parse(res));
+      final walletFellowships = await walletFellowshipsStore
+          .records(walletEntities.map((c) => c.xIdx))
+          .get(_instance);
+
+      return walletFellowships
+          .map((json) => brambl.WalletFellowship(
+              json!["xIdx"]! as int, json["name"]! as String))
+          .toList();
     } catch (e) {
       rethrow;
     }

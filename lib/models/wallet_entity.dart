@@ -1,13 +1,17 @@
 import 'package:brambldart/brambldart.dart' as brambl;
-import 'package:isar/isar.dart';
+import 'package:sembast/sembast.dart';
 
-part 'wallet_entity.g.dart';
-
-@Collection()
 class WalletFellowship extends brambl.WalletFellowship {
   WalletFellowship(this.xIdx, String name) : super(xIdx, name);
 
   @override
   // ignore: overridden_fields
-  final Id xIdx;
+  final int xIdx;
+
+  Map<String, Object?> get toSembast => {
+        "xIdx": xIdx,
+        "name": name,
+      };
 }
+
+final walletFellowshipsStore = intMapStoreFactory.store("walletFellowships");

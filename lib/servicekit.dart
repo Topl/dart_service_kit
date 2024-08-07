@@ -3,3 +3,6 @@ library servicekit;
 
 /// API
 export 'api/api.dart';
+
+/// Toolkit
+export 'toolkit/toolkit.dart';

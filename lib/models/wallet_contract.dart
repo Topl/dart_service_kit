@@ -1,9 +1,14 @@
 import 'package:brambldart/brambldart.dart' as brambl;
-import 'package:isar/isar.dart';
+import 'package:sembast/sembast.dart';
 
-part 'wallet_contract.g.dart';
-
-@Collection()
 class WalletContract extends brambl.WalletContract {
   WalletContract(super.yIdx, super.name, super.lockTemplate) : super();
+
+  Map<String, Object?> get toSembast => {
+        "yIdx": yIdx,
+        "name": name,
+        "lockTemplate": lockTemplate,
+      };
 }
+
+final walletContractsStore = intMapStoreFactory.store("walletContracts");
