@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:brambldart/brambldart.dart'
     show
@@ -33,7 +32,7 @@ import 'package:topl_common/proto/brambl/models/identifier.pb.dart';
 import 'package:topl_common/proto/brambl/models/indices.pb.dart';
 import 'package:topl_common/proto/quivr/models/proposition.pb.dart';
 
-import 'package:topl_common/proto/quivr/models/shared.pb.dart' as quivrShared;
+import 'package:topl_common/proto/quivr/models/shared.pb.dart' as quivr_shared;
 
 /// An implementation of the WalletStateAlgebra that uses a database to store state information.
 
@@ -56,7 +55,8 @@ class WalletStateApi implements WalletStateAlgebra {
 
   @override
   Future<void> initWalletState(
-      int networkId, int ledgerId, quivrShared.VerificationKey vk) async {
+      int networkId, int ledgerId, quivr_shared
+    .VerificationKey vk) async {
     final defaultTemplate = PredicateTemplate(
       [SignatureTemplate("ExtendedEd25519", 0)],
       1,
@@ -346,7 +346,8 @@ class WalletStateApi implements WalletStateAlgebra {
 
   // TODO(ultimaterex): We are not yet supporting Digest propositions in brambl-cli
   @override
-  quivrShared.Preimage? getPreimage(Proposition_Digest digestProposition) {
+  quivr_shared
+.Preimage? getPreimage(Proposition_Digest digestProposition) {
     // TODO(ultimaterex): implement getPreimage
     throw UnimplementedError();
   }
@@ -436,7 +437,8 @@ class WalletStateApi implements WalletStateAlgebra {
     if (lockTemplate == null || entityVks == null) return null;
 
     final childVks = entityVks.map((vk) {
-      final fullKey = quivrShared.VerificationKey.fromBuffer(
+      final fullKey = quivr_shared
+    .VerificationKey.fromBuffer(
           Encoding().decodeFromBase58Check(vk).get());
       return api.deriveChildVerificationKey(fullKey, nextState);
     });

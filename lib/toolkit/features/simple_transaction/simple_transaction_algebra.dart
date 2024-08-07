@@ -6,7 +6,6 @@ import 'package:brambldart/brambldart.dart'
         EncodingError,
         GenusQueryAlgebra,
         InvalidInputString,
-        LongAsInt128,
         TransactionBuilderApi,
         ValueTypeIdentifier,
         WalletApi,

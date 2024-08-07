@@ -30,7 +30,7 @@ class ContractStorageApi
 
       return result
           .map((json) => brambl.WalletContract(json!["yIdx"]! as int,
-              json!["name"]! as String, json!["lockTemplate"]! as String))
+              json["name"]! as String, json["lockTemplate"]! as String))
           .toList();
     } catch (e) {
       rethrow;

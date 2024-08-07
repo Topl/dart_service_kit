@@ -30,7 +30,7 @@ class FellowshipStorageApi
 
       return walletFellowships
           .map((json) => brambl.WalletFellowship(
-              json!["xIdx"]! as int, json!["name"]! as String))
+              json!["xIdx"]! as int, json["name"]! as String))
           .toList();
     } catch (e) {
       rethrow;
