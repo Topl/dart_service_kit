@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:brambldart/brambldart.dart'
     show
@@ -20,6 +21,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:sembast/sembast.dart';
 import 'package:servicekit/api/wallet_key_api.dart';
 import 'package:servicekit/models/cartesian.dart';
+import 'package:servicekit/models/digest.dart';
 import 'package:servicekit/models/fellowship.dart';
 import 'package:servicekit/models/template.dart';
 import 'package:servicekit/models/verification_key.dart' as sk;
@@ -221,7 +223,7 @@ class WalletStateApi implements WalletStateAlgebra {
                 Filter.equals("xFellowship", fellowshipResult.key),
                 Filter.equals("yTemplate", templateResult.key),
               ]),
-              sortOrders: [SortOrder("zState", false)]));
+              sortOrders: [SortOrder("zInteraction", false)]));
 
       if (cartesianResult != null) {
         return Indices(
@@ -320,6 +322,30 @@ class WalletStateApi implements WalletStateAlgebra {
   }
 
   @override
+  Indices? setCurrentIndices(
+      String fellowship, String template, int interaction) {
+    final fellowshipResult = fellowshipsStore.findFirstSync(_instance,
+        finder: Finder(filter: Filter.equals("name", fellowship)));
+
+    final templateResult = templatesStore.findFirstSync(_instance,
+        finder: Finder(filter: Filter.equals("template", template)));
+
+    // TODO: Incorrect implementation
+    if (fellowshipResult != null && templateResult != null) {
+      cartesiansStore.add(
+          _instance,
+          Cartesian(
+            xFellowship: fellowshipResult.key,
+            yTemplate: templateResult.key,
+            zInteraction: interaction,
+            lockPredicate: "", // TODO
+            address: "", // TODO
+          ).toSembast);
+    }
+    return null;
+  }
+
+  @override
   String getCurrentAddress() {
     final cartesianResult = cartesiansStore.findFirstSync(
       _instance,
@@ -336,11 +362,38 @@ class WalletStateApi implements WalletStateAlgebra {
     throw Exception('No address found');
   }
 
-  // TODO(ultimaterex): We are not yet supporting Digest propositions in brambl-cli
   @override
   quivr_shared.Preimage? getPreimage(Proposition_Digest digestProposition) {
-    // TODO(ultimaterex): implement getPreimage
-    throw UnimplementedError();
+    final result = digestsStore.findFirstSync(_instance,
+        finder: Finder(
+          filter: Filter.equals(
+              "digestEvidence",
+              Encoding().encodeToBase58Check(
+                  Uint8List.fromList(digestProposition.digest.value))),
+        ));
+
+    if (result != null) {
+      return quivr_shared.Preimage(
+          input: Encoding().decodeFromBase58Check("preimageInput").getOrThrow(),
+          salt: Encoding().decodeFromBase58Check("preimageSalt").getOrThrow());
+    }
+    return null;
+  }
+
+  @override
+  void addPreimage(
+      quivr_shared.Preimage preimage, Proposition_Digest digestProposition) {
+    digestsStore.add(
+      _instance,
+      Digest(
+        digestEvidence: Encoding().encodeToBase58Check(
+            Uint8List.fromList(digestProposition.sizedEvidence.digest.value)),
+        preimageInput:
+            Encoding().encodeToBase58Check(Uint8List.fromList(preimage.input)),
+        preimageSalt:
+            Encoding().encodeToBase58Check(Uint8List.fromList(preimage.salt)),
+      ).toSembast,
+    );
   }
 
   @override
