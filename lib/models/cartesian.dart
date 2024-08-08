@@ -3,8 +3,8 @@ import 'package:sembast/sembast.dart';
 class Cartesian {
   Cartesian(
       {required this.xFellowship,
-      required this.yContract,
-      required this.zState,
+      required this.yTemplate,
+      required this.zInteraction,
       required this.lockPredicate,
       required this.address,
       this.routine,
@@ -12,8 +12,8 @@ class Cartesian {
 
   final int xFellowship;
 
-  final int yContract;
-  final int zState;
+  final int yTemplate;
+  final int zInteraction;
   final String lockPredicate;
   final String address;
   String? routine;
@@ -21,8 +21,8 @@ class Cartesian {
 
   Map<String, Object?> get toSembast => {
         "xFellowship": xFellowship,
-        "yContract": yContract,
-        "zState": zState,
+        "yTemplate": yTemplate,
+        "zInteraction": zInteraction,
         "lockPredicate": lockPredicate,
         "address": address,
         "routine": routine,

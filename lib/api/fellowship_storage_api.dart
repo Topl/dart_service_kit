@@ -1,12 +1,8 @@
 import 'package:brambldart/brambldart.dart' as brambl;
 import 'package:sembast/sembast.dart';
-import 'package:servicekit/api/abstractions/parse_result.dart';
-import 'package:servicekit/models/wallet_entity.dart';
+import 'package:servicekit/models/fellowship.dart';
 
-class FellowshipStorageApi
-    implements
-        brambl.FellowshipStorageAlgebra,
-        ParseResult<brambl.WalletFellowship, WalletFellowship> {
+class FellowshipStorageApi implements brambl.FellowshipStorageAlgebra {
   FellowshipStorageApi(this._instance);
 
   final Database _instance;
@@ -14,7 +10,8 @@ class FellowshipStorageApi
   @override
   Future<int> addFellowship(brambl.WalletFellowship walletEntity) {
     try {
-      return walletFellowshipsStore.add(_instance, walletEntity.asSK.toSembast);
+      return fellowshipsStore.add(
+          _instance, Fellowship(name: walletEntity.name).toSembast);
     } catch (e) {
       rethrow;
     }
@@ -24,7 +21,7 @@ class FellowshipStorageApi
   Future<List<brambl.WalletFellowship>> findFellowships(
       List<brambl.WalletFellowship> walletEntities) async {
     try {
-      final walletFellowships = await walletFellowshipsStore
+      final walletFellowships = await fellowshipsStore
           .records(walletEntities.map((c) => c.xIdx))
           .get(_instance);
 
@@ -36,19 +33,4 @@ class FellowshipStorageApi
       rethrow;
     }
   }
-
-  @override
-  List<brambl.WalletFellowship> parse(List<WalletFellowship?> entities) {
-    return entities.isNotEmpty
-        ? (entities as List<WalletFellowship>).map((e) => e.asBrambl).toList()
-        : [];
-  }
-}
-
-extension WalletFellowshipExtension on WalletFellowship {
-  brambl.WalletFellowship get asBrambl => brambl.WalletFellowship(xIdx, name);
-}
-
-extension BramblWalletFellowshipExtension on brambl.WalletFellowship {
-  WalletFellowship get asSK => WalletFellowship(xIdx, name);
 }

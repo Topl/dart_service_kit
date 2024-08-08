@@ -15,15 +15,13 @@ import 'package:brambldart/brambldart.dart'
         SizedEvidence,
         WalletApi,
         WalletStateAlgebra;
-
 import 'package:fixnum/fixnum.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:sembast/sembast.dart';
 import 'package:servicekit/api/wallet_key_api.dart';
 import 'package:servicekit/models/cartesian.dart';
-import 'package:servicekit/models/contract.dart';
-
 import 'package:servicekit/models/fellowship.dart';
+import 'package:servicekit/models/template.dart';
 import 'package:servicekit/models/verification_key.dart' as sk;
 import 'package:servicekit/models/verification_key.dart';
 import 'package:topl_common/proto/brambl/models/address.pb.dart';
@@ -31,7 +29,6 @@ import 'package:topl_common/proto/brambl/models/box/lock.pb.dart';
 import 'package:topl_common/proto/brambl/models/identifier.pb.dart';
 import 'package:topl_common/proto/brambl/models/indices.pb.dart';
 import 'package:topl_common/proto/quivr/models/proposition.pb.dart';
-
 import 'package:topl_common/proto/quivr/models/shared.pb.dart' as quivr_shared;
 
 /// An implementation of the WalletStateAlgebra that uses a database to store state information.
@@ -55,8 +52,7 @@ class WalletStateApi implements WalletStateAlgebra {
 
   @override
   Future<void> initWalletState(
-      int networkId, int ledgerId, quivr_shared
-    .VerificationKey vk) async {
+      int networkId, int ledgerId, quivr_shared.VerificationKey vk) async {
     final defaultTemplate = PredicateTemplate(
       [SignatureTemplate("ExtendedEd25519", 0)],
       1,
@@ -68,40 +64,36 @@ class WalletStateApi implements WalletStateAlgebra {
     );
 
     // Create parties
-    await fellowshipsStore.add(
-        _instance, Fellowship(name: 'nofellowship', xFellowship: 0).toSembast);
-    await fellowshipsStore.add(
-        _instance, Fellowship(name: 'self', xFellowship: 1).toSembast);
+    final genesisXFellowship = await fellowshipsStore.add(
+        _instance, Fellowship(name: 'nofellowship').toSembast);
+    final selfXFellowship = await fellowshipsStore.add(
+        _instance, Fellowship(name: 'self').toSembast);
 
-    // Create contracts
-    await contractsStore.add(
+    // Create templates
+    final selfYTemplate = await templatesStore.add(
         _instance,
-        Contract(
-                contract: 'default',
-                yContract: 1,
-                lock: jsonEncode(defaultTemplate.toJson()))
+        Template(
+                template: 'default', lock: jsonEncode(defaultTemplate.toJson()))
             .toSembast);
-    await contractsStore.add(
+    final genesisYTemplate = await templatesStore.add(
         _instance,
-        Contract(
-                contract: 'genesis',
-                yContract: 2,
-                lock: jsonEncode(genesisTemplate.toJson()))
+        Template(
+                template: 'genesis', lock: jsonEncode(genesisTemplate.toJson()))
             .toSembast);
 
     // Create verification keys
     await verificationKeysStore.add(
         _instance,
         sk.VerificationKey(
-          xFellowship: 1,
-          yContract: 1,
+          xFellowship: selfXFellowship,
+          yTemplate: selfYTemplate,
           vks: [Encoding().encodeToBase58Check(vk.writeToBuffer())],
         ).toSembast); // TODO(ultimaterex): figure out if encoding to stringbase 58 is better
     await verificationKeysStore.add(
         _instance,
         sk.VerificationKey(
-          xFellowship: 0,
-          yContract: 2,
+          xFellowship: genesisXFellowship,
+          yTemplate: genesisYTemplate,
           vks: [],
         ).toSembast);
 
@@ -125,8 +117,8 @@ class WalletStateApi implements WalletStateAlgebra {
         _instance,
         Cartesian(
           xFellowship: 1,
-          yContract: 1,
-          zState: 1,
+          yTemplate: 1,
+          zInteraction: 1,
           lockPredicate: Encoding().encodeToBase58Check(
               defaultSignatureLock.predicate.writeToBuffer()),
           address: AddressCodecs.encode(signatureLockAddress),
@@ -138,8 +130,8 @@ class WalletStateApi implements WalletStateAlgebra {
         _instance,
         Cartesian(
           xFellowship: 0,
-          yContract: 2,
-          zState: 1,
+          yTemplate: 2,
+          zInteraction: 1,
           lockPredicate: Encoding()
               .encodeToBase58Check(genesisHeightLock.predicate.writeToBuffer()),
           address: AddressCodecs.encode(heightLockAddress),
@@ -162,8 +154,8 @@ class WalletStateApi implements WalletStateAlgebra {
     if (result.isEmpty) return null;
     return Indices(
       x: result.first["xFellowship"] as int?,
-      y: result.first["yContract"] as int?,
-      z: result.first["zState"] as int?,
+      y: result.first["yTemplate"] as int?,
+      z: result.first["zInteraction"] as int?,
     );
   }
 
@@ -173,8 +165,8 @@ class WalletStateApi implements WalletStateAlgebra {
         finder: Finder(
             filter: Filter.and([
           Filter.equals("xFellowship", indices.x),
-          Filter.equals("yContract", indices.y),
-          Filter.equals("zState", indices.z),
+          Filter.equals("yTemplate", indices.y),
+          Filter.equals("zInteraction", indices.z),
         ])));
 
     if (result.isEmpty) return null;
@@ -188,7 +180,7 @@ class WalletStateApi implements WalletStateAlgebra {
     final result = cartesiansStore.findSync(_instance,
         finder: Finder(
             filter: Filter.and([
-          Filter.equals("lockAddress", lockAddress),
+          Filter.equals("address", lockAddress),
         ])));
 
     if (result.isEmpty) return null;
@@ -204,8 +196,8 @@ class WalletStateApi implements WalletStateAlgebra {
       _instance,
       Cartesian(
               xFellowship: indices.x,
-              yContract: indices.y,
-              zState: indices.z,
+              yTemplate: indices.y,
+              zInteraction: indices.z,
               lockPredicate: lockPredicate,
               address: lockAddress,
               routine: routine,
@@ -215,27 +207,27 @@ class WalletStateApi implements WalletStateAlgebra {
   }
 
   @override
-  Indices? getNextIndicesForFunds(String fellowship, String contract) {
+  Indices? getNextIndicesForFunds(String fellowship, String template) {
     final fellowshipResult = fellowshipsStore.findFirstSync(_instance,
         finder: Finder(filter: Filter.equals("name", fellowship)));
 
-    final contractResult = contractsStore.findFirstSync(_instance,
-        finder: Finder(filter: Filter.equals("contract", contract)));
+    final templateResult = templatesStore.findFirstSync(_instance,
+        finder: Finder(filter: Filter.equals("template", template)));
 
-    if (fellowshipResult != null && contractResult != null) {
+    if (fellowshipResult != null && templateResult != null) {
       final cartesianResult = cartesiansStore.findFirstSync(_instance,
           finder: Finder(
               filter: Filter.and([
-                Filter.equals("xFellowship", fellowshipResult["xFellowship"]),
-                Filter.equals("yContract", contractResult.key),
+                Filter.equals("xFellowship", fellowshipResult.key),
+                Filter.equals("yTemplate", templateResult.key),
               ]),
               sortOrders: [SortOrder("zState", false)]));
 
       if (cartesianResult != null) {
         return Indices(
           x: cartesianResult["xFellowship"]! as int,
-          y: cartesianResult["yContract"]! as int,
-          z: (cartesianResult["zState"]! as int) + 1,
+          y: cartesianResult["yTemplate"]! as int,
+          z: (cartesianResult["zInteraction"]! as int) + 1,
         );
       }
     }
@@ -252,43 +244,43 @@ class WalletStateApi implements WalletStateAlgebra {
     return result != null;
   }
 
-  bool validateContract(String contract) {
-    final result = contractsStore.findFirstSync(_instance,
+  bool validateTemplate(String template) {
+    final result = templatesStore.findFirstSync(_instance,
         finder: Finder(
             filter: Filter.and([
-          Filter.equals("contract", contract),
+          Filter.equals("template", template),
         ])));
     return result != null;
   }
 
   @override
   Either<String, Indices> validateCurrentIndicesForFunds(
-      String fellowship, String contract, int? someState) {
+      String fellowship, String template, int? someState) {
     // ignore: unused_local_variable
     final p = validateFellowship(fellowship);
     // ignore: unused_local_variable
-    final c = validateContract(contract);
-    final indices = getCurrentIndicesForFunds(fellowship, contract, someState);
+    final c = validateTemplate(template);
+    final indices = getCurrentIndicesForFunds(fellowship, template, someState);
 
     if (indices == null) return Either.left('Indices not found');
     return Either.right(indices);
   }
 
   @override
-  String? getAddress(String fellowship, String contract, int? someState) {
+  String? getAddress(String fellowship, String template, int? someInteraction) {
     final fellowshipResult = fellowshipsStore.findFirstSync(_instance,
         finder: Finder(filter: Filter.equals("name", fellowship)));
 
-    final contractResult = contractsStore.findFirstSync(_instance,
-        finder: Finder(filter: Filter.equals("contract", contract)));
+    final templateResult = templatesStore.findFirstSync(_instance,
+        finder: Finder(filter: Filter.equals("template", template)));
 
-    if (fellowshipResult != null && contractResult != null) {
+    if (fellowshipResult != null && templateResult != null) {
       final cartesianResult = cartesiansStore.findFirstSync(_instance,
           finder: Finder(
             filter: Filter.and([
-              Filter.equals("xFellowship", fellowshipResult["xFellowship"]),
-              Filter.equals("yContract", contractResult.key),
-              Filter.equals("zState", someState ?? 0),
+              Filter.equals("xFellowship", fellowshipResult.key),
+              Filter.equals("yTemplate", templateResult.key),
+              Filter.equals("zInteraction", someInteraction ?? 0),
             ]),
           ));
 
@@ -300,28 +292,28 @@ class WalletStateApi implements WalletStateAlgebra {
 
   @override
   Indices? getCurrentIndicesForFunds(
-      String fellowship, String contract, int? someState) {
+      String fellowship, String template, int? someState) {
     final fellowshipResult = fellowshipsStore.findFirstSync(_instance,
         finder: Finder(filter: Filter.equals("name", fellowship)));
 
-    final contractResult = contractsStore.findFirstSync(_instance,
-        finder: Finder(filter: Filter.equals("contract", contract)));
+    final templateResult = templatesStore.findFirstSync(_instance,
+        finder: Finder(filter: Filter.equals("template", template)));
 
-    if (fellowshipResult != null && contractResult != null) {
+    if (fellowshipResult != null && templateResult != null) {
       final cartesianResult = cartesiansStore.findFirstSync(_instance,
           finder: Finder(
             filter: Filter.and([
-              Filter.equals("xFellowship", fellowshipResult["xFellowship"]),
-              Filter.equals("yContract", contractResult.key),
-              Filter.equals("zState", someState ?? 0),
+              Filter.equals("xFellowship", fellowshipResult.key),
+              Filter.equals("yTemplate", templateResult.key),
+              Filter.equals("zInteraction", someState ?? 0),
             ]),
           ));
 
       if (cartesianResult == null) return null;
       return Indices(
         x: cartesianResult["xFellowship"]! as int,
-        y: cartesianResult["yContract"]! as int,
-        z: (cartesianResult["zState"]! as int) + 1,
+        y: cartesianResult["yTemplate"]! as int,
+        z: (cartesianResult["zInteraction"]! as int) + 1,
       );
     }
     return null;
@@ -334,9 +326,9 @@ class WalletStateApi implements WalletStateAlgebra {
       finder: Finder(
         filter: Filter.and([
           Filter.equals("xFellowship", 1),
-          Filter.equals("yContract", 1),
+          Filter.equals("yTemplate", 1),
         ]),
-        sortOrders: [SortOrder("zState", false)],
+        sortOrders: [SortOrder("zInteraction", false)],
       ),
     );
 
@@ -346,27 +338,26 @@ class WalletStateApi implements WalletStateAlgebra {
 
   // TODO(ultimaterex): We are not yet supporting Digest propositions in brambl-cli
   @override
-  quivr_shared
-.Preimage? getPreimage(Proposition_Digest digestProposition) {
+  quivr_shared.Preimage? getPreimage(Proposition_Digest digestProposition) {
     // TODO(ultimaterex): implement getPreimage
     throw UnimplementedError();
   }
 
   @override
   Future<void> addEntityVks(
-      String fellowship, String contract, List<String> entities) async {
+      String fellowship, String template, List<String> entities) async {
     final fellowshipResult = fellowshipsStore.findFirstSync(_instance,
         finder: Finder(filter: Filter.equals("name", fellowship)));
 
-    final contractResult = contractsStore.findFirstSync(_instance,
-        finder: Finder(filter: Filter.equals("contract", contract)));
+    final templateResult = templatesStore.findFirstSync(_instance,
+        finder: Finder(filter: Filter.equals("template", template)));
 
-    if (fellowshipResult != null && contractResult != null) {
+    if (fellowshipResult != null && templateResult != null) {
       await verificationKeysStore.add(
         _instance,
         sk.VerificationKey(
-          xFellowship: fellowshipResult["xFellowship"]! as int,
-          yContract: contractResult.key,
+          xFellowship: fellowshipResult.key,
+          yTemplate: templateResult.key,
           vks: entities,
         ).toSembast,
       );
@@ -374,20 +365,20 @@ class WalletStateApi implements WalletStateAlgebra {
   }
 
   @override
-  List<String>? getEntityVks(String fellowship, String contract) {
+  List<String>? getEntityVks(String fellowship, String template) {
     final fellowshipResult = fellowshipsStore.findFirstSync(_instance,
         finder: Finder(filter: Filter.equals("name", fellowship)));
 
-    final contractResult = contractsStore.findFirstSync(_instance,
-        finder: Finder(filter: Filter.equals("contract", contract)));
+    final templateResult = templatesStore.findFirstSync(_instance,
+        finder: Finder(filter: Filter.equals("template", template)));
 
-    if (fellowshipResult != null && contractResult != null) {
+    if (fellowshipResult != null && templateResult != null) {
       final verificationKeyResult =
           verificationKeysStore.findFirstSync(_instance,
               finder: Finder(
                 filter: Filter.and([
-                  Filter.equals("xFellowship", fellowshipResult["xFellowship"]),
-                  Filter.equals("yContract", contractResult.key),
+                  Filter.equals("xFellowship", fellowshipResult.key),
+                  Filter.equals("yTemplate", templateResult.key),
                 ]),
               ));
 
@@ -401,44 +392,34 @@ class WalletStateApi implements WalletStateAlgebra {
 
   @override
   Future<void> addNewLockTemplate(
-      String contract, LockTemplate lockTemplate) async {
-    final contractResult = cartesiansStore.findFirstSync(_instance,
-        finder: Finder(
-          sortOrders: [SortOrder("yContract", false)],
-        ));
-
-    final yContract =
-        contractResult != null ? (contractResult["yContract"]! as int) + 1 : 1;
-
-    await contractsStore.add(
+      String template, LockTemplate lockTemplate) async {
+    await templatesStore.add(
       _instance,
-      Contract(
-        contract: contract,
-        yContract: yContract,
-        lock: jsonEncode(lockTemplate),
+      Template(
+        template: template,
+        lock: jsonEncode(lockTemplate.toJson()),
       ).toSembast,
     );
   }
 
   @override
-  LockTemplate? getLockTemplate(String contract) {
-    final contractResult = contractsStore.findFirstSync(_instance,
-        finder: Finder(filter: Filter.equals("contract", contract)));
+  LockTemplate? getLockTemplate(String template) {
+    final templateResult = templatesStore.findFirstSync(_instance,
+        finder: Finder(filter: Filter.equals("template", template)));
 
-    if (contractResult == null) return null;
-    return LockTemplate.fromJson(jsonDecode(contractResult["lock"]! as String));
+    if (templateResult == null) return null;
+    return LockTemplate.fromJson(jsonDecode(templateResult["lock"]! as String));
   }
 
   @override
-  Lock? getLock(String fellowship, String contract, int nextState) {
-    final lockTemplate = getLockTemplate(contract);
-    final entityVks = getEntityVks(fellowship, contract);
+  Lock? getLock(String fellowship, String template, int nextState) {
+    final lockTemplate = getLockTemplate(template);
+    final entityVks = getEntityVks(fellowship, template);
 
     if (lockTemplate == null || entityVks == null) return null;
 
     final childVks = entityVks.map((vk) {
-      final fullKey = quivr_shared
-    .VerificationKey.fromBuffer(
+      final fullKey = quivr_shared.VerificationKey.fromBuffer(
           Encoding().decodeFromBase58Check(vk).get());
       return api.deriveChildVerificationKey(fullKey, nextState);
     });

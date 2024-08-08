@@ -2,15 +2,15 @@ import 'package:sembast/sembast.dart';
 
 class VerificationKey {
   VerificationKey(
-      {required this.xFellowship, required this.yContract, required this.vks});
+      {required this.xFellowship, required this.yTemplate, required this.vks});
 
   late int xFellowship;
-  late int yContract;
+  late int yTemplate;
   late List<String> vks;
 
   Map<String, Object?> get toSembast => {
         "xFellowship": xFellowship,
-        "yContract": yContract,
+        "yTemplate": yTemplate,
         "vks": vks,
       };
 }
