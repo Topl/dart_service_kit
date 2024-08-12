@@ -282,12 +282,14 @@ class WalletStateApi implements WalletStateAlgebra {
         finder: Finder(filter: Filter.equals("name", template)));
 
     if (fellowshipResult != null && templateResult != null) {
+      final x = fellowshipResult["x"]! as int;
+      final y = templateResult["y"]! as int;
       final cartesianResult = cartesiansStore.findFirstSync(_instance,
           finder: Finder(
             filter: Filter.and([
-              Filter.equals("x", fellowshipResult.key),
-              Filter.equals("y", templateResult.key),
-              Filter.equals("z", someInteraction ?? 0),
+              Filter.equals("x", x),
+              Filter.equals("y", y),
+              Filter.equals("z", someInteraction ?? 1),
             ]),
           ));
 
@@ -322,7 +324,7 @@ class WalletStateApi implements WalletStateAlgebra {
         final z = (cartesianResult["z"]! as int) + 1;
         return Indices(x: x, y: y, z: z);
       } else {
-        return Indices(x: x, y: y, z: 0);
+        return Indices(x: x, y: y, z: 1);
       }
     }
     return null;
@@ -413,11 +415,13 @@ class WalletStateApi implements WalletStateAlgebra {
         finder: Finder(filter: Filter.equals("name", template)));
 
     if (fellowshipResult != null && templateResult != null) {
+      final x = fellowshipResult["x"]! as int;
+      final y = templateResult["y"]! as int;
       await verificationKeysStore.add(
         _instance,
         sk.VerificationKey(
-          x: fellowshipResult["x"]! as int,
-          y: templateResult["y"]! as int,
+          x: x,
+          y: y,
           vks: entities,
         ).toSembast,
       );
@@ -433,12 +437,14 @@ class WalletStateApi implements WalletStateAlgebra {
         finder: Finder(filter: Filter.equals("name", template)));
 
     if (fellowshipResult != null && templateResult != null) {
+      final x = fellowshipResult["x"]! as int;
+      final y = templateResult["y"]! as int;
       final verificationKeyResult =
           verificationKeysStore.findFirstSync(_instance,
               finder: Finder(
                 filter: Filter.and([
-                  Filter.equals("x", fellowshipResult["x"]! as int),
-                  Filter.equals("y", templateResult["y"]! as int),
+                  Filter.equals("x", x),
+                  Filter.equals("y", y),
                 ]),
               ));
 

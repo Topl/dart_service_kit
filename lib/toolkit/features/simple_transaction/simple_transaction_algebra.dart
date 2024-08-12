@@ -3,14 +3,11 @@ import 'package:brambldart/brambldart.dart'
         AddressCodecs,
         Either,
         Encoding,
-        EncodingError,
         GenusQueryAlgebra,
-        InvalidInputString,
         TransactionBuilderApi,
         ValueTypeIdentifier,
         WalletApi,
-        WalletStateAlgebra,
-        WithResultExtension;
+        WalletStateAlgebra;
 import 'package:servicekit/toolkit/features/simple_transaction/simple_transaction_algebra_error.dart';
 import 'package:servicekit/toolkit/features/wallet/wallet_management_utils.dart';
 import 'package:topl_common/proto/brambl/models/address.pb.dart';
@@ -140,14 +137,21 @@ class SimpleTransactionAlgebra extends SimpleTransactionAlgebraDefinition {
     required ValueTypeIdentifier tokenType,
   }) async {
     try {
-      final keyPair = await walletManagementUtils.loadKeys(keyfile, password);
+      final keyPair = (await walletManagementUtils.loadKeys(keyfile, password))
+          .getOrThrow();
       final someCurrentIndices = walletStateApi.getCurrentIndicesForFunds(
           fromFellowship, fromTemplate, someFromState);
-      final predicateFundsToUnlock = someCurrentIndices != null
-          ? walletStateApi.getLockByIndex(someCurrentIndices)
-          : null;
+      if (someCurrentIndices == null) {
+        return Either.left(CreateTxError('Unable to get current indices'));
+      }
+      final predicateFundsToUnlock =
+          walletStateApi.getLockByIndex(someCurrentIndices);
+      if (predicateFundsToUnlock == null) {
+        return Either.left(
+            CreateTxError('Unable to get lock for current indices'));
+      }
 
-      Indices? someNextIndices;
+      final Indices? someNextIndices;
       if (someChangeFellowship != null &&
           someChangeTemplate != null &&
           someChangeState != null) {
@@ -157,65 +161,73 @@ class SimpleTransactionAlgebra extends SimpleTransactionAlgebraDefinition {
         someNextIndices =
             walletStateApi.getNextIndicesForFunds(fromFellowship, fromTemplate);
       }
-
-      Lock? changeLock;
-      if (someNextIndices != null) {
-        changeLock = walletStateApi.getLock(
-            fromFellowship, fromTemplate, someNextIndices.z);
+      if (someNextIndices == null) {
+        return Either.left(CreateTxError('Unable to get next indices'));
       }
 
-      final fromAddress = predicateFundsToUnlock != null
-          ? await transactionBuilderApi
-              .lockAddress(Lock(predicate: predicateFundsToUnlock))
-          : null;
+      final changeLock = walletStateApi.getLock(
+          fromFellowship, fromTemplate, someNextIndices.z);
 
-      List<Txo>? txos;
+      if (changeLock == null) {
+        return Either.left(
+            CreateTxError('Unable to get lock for next indices'));
+      }
+
+      final fromAddress = await transactionBuilderApi
+          .lockAddress(Lock(predicate: predicateFundsToUnlock));
+
+      final List<Txo> txos;
       try {
-        txos = await utxoAlgebra.queryUtxo(fromAddress: fromAddress!);
+        txos = (await utxoAlgebra.queryUtxo(fromAddress: fromAddress))
+            .where((x) =>
+                !x.transactionOutput.value.hasTopl() &&
+                !x.transactionOutput.value.hasUpdateProposal())
+            .toList();
       } catch (e) {
-        throw CreateTxError('Problem contacting network: $e');
-      }
-
-      txos = txos
-          .where((x) =>
-              !x.transactionOutput.value.hasTopl() &&
-              !x.transactionOutput.value.hasUpdateProposal())
-          .toList();
-
-      Either<EncodingError, LockAddress> toAddressOpt;
-      if (someToAddress != null) {
-        toAddressOpt = Either.right(someToAddress);
-      } else if (someToFellowship != null && someToTemplate != null) {
-        final addrStr =
-            walletStateApi.getAddress(someToFellowship, someToTemplate, null);
-        toAddressOpt = AddressCodecs.decode(addrStr!);
-      } else {
-        toAddressOpt = Either.left(InvalidInputString());
+        return Either.left(NetworkProblem(e.toString()));
       }
 
       if (txos.isEmpty) {
-        throw CreateTxError('No LVL txos found');
-      } else if (changeLock != null && toAddressOpt.isRight) {
-        return (await buildTransaction(
-          txos,
-          someChangeFellowship,
-          someChangeTemplate,
-          someChangeState,
-          predicateFundsToUnlock!,
-          changeLock,
-          toAddressOpt.get(),
-          amount,
-          fee,
-          someNextIndices,
-          keyPair.get(),
-          tokenType,
-        ))
-            .withResult((p0) => Either.right(p0));
-      } else if (changeLock == null) {
-        throw CreateTxError('Unable to generate change lock');
-      } else {
-        throw CreateTxError('Unable to derive recipient address');
+        return Either.left(CreateTxError('No LVL txos found'));
       }
+
+      final LockAddress toAddress;
+      if (someToAddress != null) {
+        toAddress = someToAddress;
+      } else if (someToFellowship != null && someToTemplate != null) {
+        final addrStr =
+            walletStateApi.getAddress(someToFellowship, someToTemplate, null);
+
+        if (addrStr == null) {
+          return Either.left(CreateTxError('Unable to determine toAddress'));
+        }
+        final toAddressOpt = AddressCodecs.decode(addrStr);
+        if (toAddressOpt.isRight) {
+          toAddress = toAddressOpt.get();
+        } else {
+          return Either.left(CreateTxError("Invalid toAddress"));
+        }
+      } else {
+        return Either.left(CreateTxError(
+            "Either someToAddress or (someToFellowship and someToTemplate) must be provided"));
+      }
+
+      final tx = await buildTransaction(
+        txos,
+        someChangeFellowship,
+        someChangeTemplate,
+        someChangeState,
+        predicateFundsToUnlock,
+        changeLock,
+        toAddress,
+        amount,
+        fee,
+        someNextIndices,
+        keyPair,
+        tokenType,
+      );
+
+      return Either.right(tx);
     } catch (e) {
       if (e is SimpleTransactionAlgebraError) {
         return Either.left(e);
