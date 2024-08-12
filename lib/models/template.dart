@@ -1,13 +1,15 @@
 import 'package:sembast/sembast.dart';
 
 class Template {
-  Template({required this.template, required this.lock});
+  Template({required this.y, required this.name, required this.lock});
 
-  final String template;
+  final int y;
+  final String name;
   final String lock;
 
   Map<String, Object?> get toSembast => {
-        "template": template,
+        "y": y,
+        "name": name,
         "lock": lock,
       };
 }

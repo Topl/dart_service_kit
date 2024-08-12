@@ -8,10 +8,13 @@ class FellowshipStorageApi implements brambl.FellowshipStorageAlgebra {
   final Database _instance;
 
   @override
-  Future<int> addFellowship(brambl.WalletFellowship walletEntity) {
+  Future<int> addFellowship(brambl.WalletFellowship walletEntity) async {
     try {
+      final latest = await fellowshipsStore.findFirst(_instance,
+          finder: Finder(sortOrders: [SortOrder("x", false)]));
+      final x = latest != null ? ((latest["x"]! as int) + 1) : 0;
       return fellowshipsStore.add(
-          _instance, Fellowship(name: walletEntity.name).toSembast);
+          _instance, Fellowship(x: x, name: walletEntity.name).toSembast);
     } catch (e) {
       rethrow;
     }
@@ -27,7 +30,7 @@ class FellowshipStorageApi implements brambl.FellowshipStorageAlgebra {
 
       return walletFellowships
           .map((json) => brambl.WalletFellowship(
-              json!["xIdx"]! as int, json["name"]! as String))
+              json!["x"]! as int, json["name"]! as String))
           .toList();
     } catch (e) {
       rethrow;

@@ -172,8 +172,8 @@ class SimpleTransactionAlgebra extends SimpleTransactionAlgebraDefinition {
       List<Txo>? txos;
       try {
         txos = await utxoAlgebra.queryUtxo(fromAddress: fromAddress!);
-      } catch (_) {
-        throw CreateTxError('Problem contacting network');
+      } catch (e) {
+        throw CreateTxError('Problem contacting network: $e');
       }
 
       txos = txos

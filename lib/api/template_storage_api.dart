@@ -9,8 +9,11 @@ class TemplateStorageApi implements brambl.TemplateStorageAlgebra {
 
   @override
   Future<int> addTemplate(brambl.WalletTemplate walletTemplate) async {
+    final latest = await templatesStore.findFirst(_instance,
+        finder: Finder(sortOrders: [SortOrder("y", false)]));
+    final y = latest != null ? ((latest["y"]! as int) + 1) : 0;
     final template = Template(
-        lock: walletTemplate.lockTemplate, template: walletTemplate.name);
+        y: y, lock: walletTemplate.lockTemplate, name: walletTemplate.name);
     try {
       return templatesStore.add(_instance, template.toSembast);
     } catch (e) {
