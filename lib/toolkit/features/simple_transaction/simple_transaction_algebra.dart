@@ -113,7 +113,7 @@ class SimpleTransactionAlgebra extends SimpleTransactionAlgebraDefinition {
         );
       }
       return ioTransaction;
-    } catch (e) {
+    } catch (e, s) {
       throw CannotSerializeProtobufFile('Cannot write to file');
     }
   }

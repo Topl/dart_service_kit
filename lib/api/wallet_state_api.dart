@@ -377,14 +377,18 @@ class WalletStateApi implements WalletStateAlgebra {
         finder: Finder(
           filter: Filter.equals(
               "digestEvidence",
-              Encoding().encodeToBase58Check(
-                  Uint8List.fromList(digestProposition.digest.value))),
+              Encoding().encodeToBase58Check(Uint8List.fromList(
+                  digestProposition.sizedEvidence.digest.value))),
         ));
 
     if (result != null) {
       return quivr_shared.Preimage(
-          input: Encoding().decodeFromBase58Check("preimageInput").getOrThrow(),
-          salt: Encoding().decodeFromBase58Check("preimageSalt").getOrThrow());
+          input: Encoding()
+              .decodeFromBase58Check(result["preimageInput"]! as String)
+              .getOrThrow(),
+          salt: Encoding()
+              .decodeFromBase58Check(result["preimageSalt"]! as String)
+              .getOrThrow());
     }
     return null;
   }
