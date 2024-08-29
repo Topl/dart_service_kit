@@ -1,3 +1,8 @@
+## 2.0.0-beta.1
+- Implements the rename from Contract to Template
+- Modifies the Sembast DB structures to use simpler/shorter names
+- Updates some TX builder functionality
+
 ## 2.0.0-beta.0
 - Replaced Isar with Sembast to increase web compatibility
 - Fix to Transaction usage
