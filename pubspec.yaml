@@ -1,6 +1,6 @@
 name: servicekit
 description: Topl's ready to use toolkit for Flutter on the Topl Blockchain
-version: 2.0.0-beta.0 # protocol ver 2
+version: 2.0.0-beta.1 # protocol ver 2
 homepage:
 repository: https://github.com/Topl/dart_service_kit
 
@@ -15,7 +15,9 @@ dependencies:
 
   #topl
   topl_common: ^2.1.0
-  brambldart: ^2.0.0-beta.1
+  brambldart: ^2.0.0-beta.2
+  # brambldart: 
+  #   path: ../BramblDart
 
   # types
   fixnum: ^1.1.0

@@ -1,13 +1,13 @@
 import 'package:sembast/sembast.dart';
 
 class Fellowship {
-  Fellowship({required this.name, required this.xFellowship});
+  Fellowship({required this.x, required this.name});
 
-  final int xFellowship;
+  final int x;
   final String name;
 
   Map<String, Object?> get toSembast => {
-        "xFellowship": xFellowship,
+        "x": x,
         "name": name,
       };
 }

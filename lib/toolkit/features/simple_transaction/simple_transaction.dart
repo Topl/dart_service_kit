@@ -22,7 +22,7 @@ class SimpleTransaction {
     required (String?, String?, int?) changeCoordinates,
     LockAddress? someToAddress,
     String? someToFellowship,
-    String? someToContract,
+    String? someToTemplate,
     required int amount,
     required int fee,
     required ValueTypeIdentifier tokenType,
@@ -31,15 +31,15 @@ class SimpleTransaction {
   }) async {
     try {
       final fromFellowship = fromCoordinates.$1;
-      final fromContract = fromCoordinates.$2;
+      final fromTemplate = fromCoordinates.$2;
       final someFromState = fromCoordinates.$3;
       final someChangeFellowship = changeCoordinates.$1;
-      final someChangeContract = changeCoordinates.$2;
+      final someChangeTemplate = changeCoordinates.$2;
       final someChangeState = changeCoordinates.$3;
 
       final validationResult =
           walletStateAlgebra.validateCurrentIndicesForFunds(
-              fromFellowship, fromContract, someFromState);
+              fromFellowship, fromTemplate, someFromState);
 
       if (validationResult.isLeft) {
         return Either.left('Invalid params\n ${validationResult.left}');
@@ -50,14 +50,14 @@ class SimpleTransaction {
         keyfile: keyfile,
         password: password,
         fromFellowship: fromFellowship,
-        fromContract: fromContract,
+        fromTemplate: fromTemplate,
         someFromState: someFromState,
         someChangeFellowship: someChangeFellowship,
-        someChangeContract: someChangeContract,
+        someChangeTemplate: someChangeTemplate,
         someChangeState: someChangeState,
         someToAddress: someToAddress,
         someToFellowship: someToFellowship,
-        someToContract: someToContract,
+        someToTemplate: someToTemplate,
         amount: amount,
         fee: fee,
         tokenType: tokenType,
